@@ -1,0 +1,26 @@
+import { Storage } from '@google-cloud/storage';
+
+const storage = new Storage({
+  keyFilename: './firebase-key.json', // El archivo que bajaste
+});
+
+const bucketName = 'radio-ccbes.firebasestorage.app';
+
+async function configureBucketCors() {
+  try {
+    await storage.bucket(bucketName).setCorsConfiguration([
+      {
+        maxAgeSeconds: 3600,
+        method: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
+        origin: ['*'],
+        responseHeader: ['Content-Type', 'Authorization', 'x-goog-resumable'],
+      },
+    ]);
+    console.log('✅ ¡CORS configurado con éxito!');
+  } catch (error) {
+    console.error('❌ Error:', error.message);
+    console.log('Intenta cambiar el bucketName a "radio-ccbes.appspot.com" si falla.');
+  }
+}
+
+configureBucketCors();

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>CCBES Mar del Plata - Sitio Oficial</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <link crossorigin="anonymous" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    referrerpolicy="no-referrer" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#1a1a1a",
+            "background-light": "#f4f4f5",
+            "background-dark": "#0f172a",
+            accent: "#e5e7eb"
+          },
+          fontFamily: {
+            display: ["Montserrat", "sans-serif"],
+            body: ["Inter", "sans-serif"],
+          },
+          borderRadius: {
+            DEFAULT: "0.5rem",
+            'xl': '1rem',
+          },
+        },
+      },
+    };
+  </script>
+  <style type="text/tailwindcss">
+    .hero-grain {
+            background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCa-bv6foFA7y7iojRzQggAtyTJ5JSApJ_MelbVwAsMIbpOfcK2nQT8vjc_-ha6j09ez7ZJWEFdaMMdhxr7HirEkjdWbAj9BRhBzLSClyNA7VCX1E2fUetuer78B9oAV8j1906UYk0snCHH4qZpN0Dw84mK3IGNgQGIpSws0RP0ipOCxKz27ZI6QmmXm82ufbgKhdXZGsNwGd1tFZKGEMvZC1BzelWHrgTDE7jBMxdD3qdxml20VXNWhMEC447lnOYzV_Z_IRGjwyk);
+            background-color: #1a1a1a;
+        }
+        .scrolling-text-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .scrolling-text {
+            display: inline-block;
+            animation: scroll 20s linear infinite;
+        }
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
+</head>
+
+<body
+  class="bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 font-body transition-colors duration-300">
+  <div class="bg-black text-white py-2 px-4 text-xs font-display border-b border-gray-800">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-4">
+        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">language</span> ES </span>
+        <span class="hidden md:flex items-center gap-1"><span class="material-symbols-outlined text-sm">phone</span>
+          +54.11.4789.0047</span>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a class="hover:text-gray-400 transition-colors" href="mailto:contacto@ccbes.org.ar">contacto@ccbes.org.ar</a>
+        <div class="flex space-x-3 text-sm">
+          <a class="hover:text-gray-400 transition-colors" href="#"><i class="fa-brands fa-facebook-f"></i></a>
+          <a class="hover:text-gray-400 transition-colors" href="#"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <nav class="sticky top-0 z-50 bg-white/90 dark:bg-black/90 backdrop-blur-md shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-20">
+        <div class="flex-shrink-0 flex items-center">
+          <div class="flex items-center gap-3">
+            <img alt="CCBES Logo" class="w-12 h-12 object-contain" src="logo.png" />
+            <div class="flex flex-col leading-none">
+              <span class="font-display font-bold text-sm tracking-tight uppercase text-black dark:text-white">Centro
+                Cristiano</span>
+              <span
+                class="font-display font-bold text-sm tracking-tight uppercase text-black dark:text-white">Bienvenido
+                Espiritu Santo</span>
+            </div>
+          </div>
+        </div>
+        <div class="hidden md:block">
+          <div class="ml-10 flex items-baseline space-x-8 font-display text-sm font-semibold tracking-wide uppercase">
+            <a class="hover:text-gray-500 transition-colors" href="#">Inicio</a>
+            <a class="hover:text-gray-500 transition-colors" href="#eventos">Eventos</a>
+            <a class="hover:text-gray-500 transition-colors" href="#radio">Radio CCBES</a>
+            <a class="hover:text-gray-500 transition-colors" href="#ofrendar">Ofrendar</a>
+            <a class="hover:text-gray-500 transition-colors" href="#sobre-nosotros">Sobre Nosotros</a>
+          </div>
+        </div>
+        <div class="md:hidden">
+          <button class="p-2 rounded-md text-gray-600 dark:text-gray-400">
+            <span class="material-symbols-outlined">menu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <header class="relative hero-grain text-white overflow-hidden py-12 md:py-20">
+    <div class="absolute top-0 left-0 w-full scrolling-text-container opacity-20 pointer-events-none">
+      <div class="scrolling-text text-[6rem] font-black uppercase tracking-widest text-transparent border-white/40"
+        style="-webkit-text-stroke: 1px rgba(255,255,255,0.3)">
+        CONFERENCIA CCBES 2026 CONFERENCIA CCBES 2026 CONFERENCIA CCBES 2026
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto px-4 relative z-10 text-center">
+      <div class="flex justify-center mb-6">
+        <div class="border-2 border-white rounded-full px-6 py-2 text-2xl font-black tracking-tighter">2026</div>
+      </div>
+      <h1 class="text-6xl md:text-9xl font-display font-black tracking-tighter uppercase mb-2">
+        Conferencia<br />CCBES Jóvenes
+      </h1>
+      <p
+        class="text-2xl md:text-4xl font-display font-bold uppercase tracking-widest mb-12 border-y-2 border-white/30 inline-block py-2">
+        16 y 17 de Feb
+      </p>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-12">
+        <div class="group cursor-pointer">
+          <div
+            class="relative aspect-[3/4] overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 border border-white/20">
+            <img alt="Líder Iglesia"
+              class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq8HmAlBcGnB6eAbaK3vn95AMc7h8CAsYWelVbuq-JdWzGYymdP3EjNx3gpbzEjZxieekV03hLXikQoDw66VL8GGGx2V15jEEPQtiX3axJ2q87k3ThPCdqUWJsmX_94spsiz-csqLOq_JURvUnWkd8jnzzYTX3Q_ghDNtogT16tb-u5y7Au6slzCYkohZFfiSSvXroTj3YdI6KCZUYvfqzIuEEVgSVXz1MAPmYlh7BPim727fVupaXMgT4krc-LHQwqfWMLynOang" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-4 text-left">
+              <p class="text-xs font-bold uppercase leading-tight">Claudio y Betty Freidzon</p>
+            </div>
+          </div>
+        </div>
+        <div class="group cursor-pointer">
+          <div
+            class="relative aspect-[3/4] overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 border border-white/20">
+            <img alt="Líder Iglesia"
+              class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCC16MQySMHakESB_my97iZmwNLCRgODyfCuh0Y7PChQZ_OhELTownqS9587KairdoujMhX0sd_BpIkrgsq-L8MyTXRHqjREFi765taQQeOGK-NwlyebzuenW3JURiXNJdztCyj1UUlmV03B8bivcHZqahzrzQMSaaXKcYvJdPfbVusjkOXDUrD0ccxYwURiEz0DnP509iZI0cSkz4gOW8R7CeI8ONCCjEGTD_a7_WDFPCp4A9G7Zupo471hq2MFsopC41HmoBHMII" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-4 text-left">
+              <p class="text-xs font-bold uppercase leading-tight">Heidi Baker</p>
+            </div>
+          </div>
+        </div>
+        <div class="group cursor-pointer">
+          <div
+            class="relative aspect-[3/4] overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 border border-white/20">
+            <img alt="Líder Iglesia"
+              class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjru779OELSRzJk6XXrwDwXHJS9QZTrR9GhlP8BtDZ7cplRy4NT6q9pYbVsH9Z4ft_mMGaOd0ettvJG0ZQCmrEcMIXFd1y27bqkkIWNNjX9Wxlop1KF3x9C8dBP8kyTklbhh1gDIOvx6kGSdsQLU7gScJPnIDb4TQxlrcL3KDnAIVF6UXNS1LZy4UDeMDMIMx2BKCDqJJtnfXiL2Oj1ffIzBuypgIKjpogz3R913ja7xWf4YIOxIFKBcnhAN6bwJsoshgJXHfDH8o" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-4 text-left">
+              <p class="text-xs font-bold uppercase leading-tight">Andrés Bisonni</p>
+            </div>
+          </div>
+        </div>
+        <div class="group cursor-pointer">
+          <div
+            class="relative aspect-[3/4] overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 border border-white/20">
+            <img alt="Líder Iglesia"
+              class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwiq5zulseH73bRc0Spjak7r9q4Yx5lK3lgICmIr3K-PJVmougO3H9kFq0HJVVUAk3xwFygAeSZ_uRAg8kqrmwTgnFBt6acK8-VcQMOJi-rKXK1qMxjZgdgYEqROO36S562EkW8Ti-O9lBxthDfIXdhiBnKVuaR0o92EkjGkLY81ggrBZ6lKRGNA_UH_hO6Y8TtshkFDBuO4wC16v3-16jEpcP94BiALN0MrgmSL_tT54dgS3vl2d2X_81hd0R0FcPn_nYC_1z2J0" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-4 text-left">
+              <p class="text-xs font-bold uppercase leading-tight">Israel Chaparro</p>
+            </div>
+          </div>
+        </div>
+        <div class="group cursor-pointer">
+          <div
+            class="relative aspect-[3/4] overflow-hidden grayscale hover:grayscale-0 transition-all duration-500 border border-white/20">
+            <img alt="Líder Iglesia"
+              class="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKjeeTvP3C5RK06M39McCducJQIz3txOECdWsqWMUjwQTW3954Ia8C2hvcR85koxFU5TYru-yn7gk5VU38Xi6V0VEa4GNPybyu9V9NdZEQjCcp2Pm8j8ivqtcmlJH0SW1QaTNbd655eprn6rC3u_0_X75iITQ9krDhDfZ-uzyNI8xJuxSxEJEVzRBCZdh1ca6I4hPqRsN83JfylrG7rKTKWOYaRpwd9QMk1lUy-nb8WwrJ70sBv_3p8RUs130ysGLed8CQdNOCU48" />
+            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-4 text-left">
+              <p class="text-xs font-bold uppercase leading-tight">Chad McCabe</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-8 text-sm font-bold tracking-widest uppercase opacity-80">Centro Cristiano Bienvenido Espiritu Santo
+      </p>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-4 py-16 space-y-8">
+    <section
+      class="bg-white dark:bg-gray-900 rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row items-center"
+      id="radio">
+      <div class="p-8 md:p-12 flex-1">
+        <h2 class="text-4xl font-display font-light mb-6">Radio <span class="font-bold">CCBES</span></h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-0 max-w-lg leading-relaxed text-lg">
+          Sintonizanos en cualquier momento y lugar a través de nuestra aplicación oficial. Disfrutá de la mejor
+          programación cristiana directamente en tu dispositivo móvil.
+        </p>
+      </div>
+      <div
+        class="bg-gray-50 dark:bg-gray-800/50 p-12 flex flex-col items-center justify-center border-l dark:border-gray-800">
+        <div class="bg-white p-6 rounded-xl shadow-inner mb-4">
+          <img alt="QR Code Radio CCBES" class="w-48 h-48"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYWtL7z9oEpxB7hg6XzrdVqcMh6ypceshnp-oeYWrZidjFQ5znpy08zGLAqMncMhZWnP0qQQJ5DDhLoogbr01QjhYonS0UoPpfUkYOhPRPzn8AkU6g3-3hHjXG6FlJL1pT-67RSyEk1YjC-LpPuTuVTMkO5WiCLh7CqqAZMJTcfAuRNG6AzySTa12Pk3fC0Av6aZ9hEzoqezFpWabVvNmYC7uHS-5NKS_sHoRKwh7moHM59-NiBEWmzXdGqebBuavjK0KDj0bdNmQ" />
+        </div>
+        <p class="text-sm uppercase font-black text-gray-700 dark:text-gray-300 tracking-widest text-center">ESCANEA
+          PARA DESCARGAR LA APP</p>
+      </div>
+    </section>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="bg-white dark:bg-gray-900 p-10 rounded-xl shadow-lg border-t-4 border-primary">
+        <h3 class="text-3xl font-display font-light mb-4">¿Tenés un pedido<br /><span class="font-bold">de
+            Oración?</span></h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">Si tenés un pedido de oración, estaremos
+          intercediendo por vos.</p>
+        <button
+          class="w-full bg-primary text-white py-4 font-bold uppercase tracking-wider rounded-lg hover:opacity-90 transition">Oren
+          por mi necesidad</button>
+      </div>
+      <div class="bg-white dark:bg-gray-900 p-10 rounded-xl shadow-lg border-t-4 border-primary" id="ofrendar">
+        <h3 class="text-3xl font-display font-light mb-4">Ofrendar</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">Gracias por tu deseo de contribuir con la
+          misión que Dios nos encomendó como Iglesia.</p>
+        <button
+          class="w-full bg-primary text-white py-4 font-bold uppercase tracking-wider rounded-lg hover:opacity-90 transition">Quiero
+          Ofrendar</button>
+      </div>
+    </div>
+    <section class="py-12" id="eventos">
+      <div class="flex justify-between items-end mb-8">
+        <div>
+          <h2 class="text-4xl font-display font-bold uppercase tracking-tight">Eventos de la Iglesia</h2>
+          <p class="text-gray-500">Actividades, conferencias y momentos compartidos.</p>
+        </div>
+        <div class="flex gap-2">
+          <button
+            class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span
+              class="material-symbols-outlined">chevron_left</span></button>
+          <button
+            class="w-12 h-12 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span
+              class="material-symbols-outlined">chevron_right</span></button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="aspect-square rounded-xl overflow-hidden shadow-md">
+          <img alt="Comunidad Iglesia" class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDB6dq0OGHdrJGh5qKACNwNVz9-p7qxaUsMMNlN3YO2xvR4pruj86l8OaXfP4xPVFgN9_GMKOSa61Qpkiev6v9wc4RxESKY_su4tXyxdogwLYwBsE_K2qhy0fI7AUNaF2LmCo6Bifh2YTBvqZQZM-Sapytxlz_yDbvcuqIgLA0ZOT5Ku2Q3oVUf_aRKRBp8eC_pfFzt_O0FwplOTYzZUaqYfwDZCwRas6Ao0q3Um3fmXstsss5r5y9s-4wcnawrtU9UEVdvzO1wJdA" />
+        </div>
+        <div class="aspect-square rounded-xl overflow-hidden shadow-md">
+          <img alt="Evento Iglesia" class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7HVzI5QJMU4-AEJA_1ihJBRIz_sg7jBHMoxGGubssBjndM_lBBbqYQBRO-7Q5zBPunXZFYTcL50mHzR6O_GvrkLueSzf9UYedrO9dlxb0XoxLShrva-wI8S5F7v3xBDJzSSgVWJbmeRJV4eB0nv6HrGeM14oWIylsT5Mj9zHRDzviPSsr-LLrxxFcgfiVrkPM49NDm00gsLCd9Y8cW47EqVG4QEC9uv8jwq-axkFC9U3zeRftWYmlh7kYpBo5E6JwmhROAJeS2Bg" />
+        </div>
+        <div class="aspect-square rounded-xl overflow-hidden shadow-md">
+          <img alt="Jovenes Iglesia" class="w-full h-full object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBuOYQligVtB_vg1-CHN5jGWYrE0uMx5Ph8rgZbjnJ0x8AW_xfq1rF8gvGMNewN_1G4EPIPWo4goN-UxnHAr0s0XjC3UPnrgnmX4mteuRz3R4hxXqIphYCbut6bJkXPFu-FnZEvs4O55Nbpoa32KL-oXKr4_cXYYEwbs4fenqFLioo2c0DsWkFlBg11eIu3pu2t4m3CVA2jR4ZLhg2HqHhsHNE3WCxO95DIeS9fHXFHxBFRN3OPXOStfU_WJr2iDqrz6sJYAd_qmQ" />
+        </div>
+      </div>
+    </section>
+    <section class="py-12 border-t border-gray-200 dark:border-gray-800" id="sobre-nosotros">
+      <div class="bg-white dark:bg-gray-900 p-8 md:p-12 rounded-xl shadow-md w-full">
+        <h2 class="text-4xl font-display font-light mb-8 text-black dark:text-white">Reuniones<br /><span
+            class="font-bold uppercase">Presenciales</span></h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-2xl">
+          <div class="space-y-2">
+            <p class="font-bold text-primary dark:text-white text-xl uppercase tracking-wider">Jueves</p>
+            <p class="text-lg">19:30 Hs.</p>
+          </div>
+          <div class="space-y-2">
+            <p class="font-bold text-primary dark:text-white text-xl uppercase tracking-wider">Sábados</p>
+            <p class="text-lg">19:30 Hs.</p>
+          </div>
+        </div>
+        <div class="p-6 bg-gray-100 dark:bg-gray-800 rounded-lg">
+          <div class="flex items-start gap-4 text-black dark:text-white">
+            <span class="material-symbols-outlined mt-1">location_on</span>
+            <div>
+              <p class="font-bold">Calle 431 & calle 54</p>
+              <p class="text-gray-500">Mar del Plata, Argentina</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="h-[400px] rounded-xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800">
+      <iframe allowfullscreen="" height="100%" loading="lazy"
+        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3137.989710332353!2d-57.6406979!3d-38.1404111!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9584e60f081d4519%3A0xc3c9402e1c9e8310!2sCalle%20431%20%26%20Calle%2054%2C%20B7600%20Mar%20del%20Plata%2C%20Provincia%20de%20Buenos%20Aires!5e0!3m2!1ses!2sar!4v1715600000000!5m2!1ses!2sar"
+        style="border:0;" width="100%"></iframe>
+    </section>
+  </main>
+  <footer class="bg-black text-white py-12 px-4 border-t border-gray-800 mt-20">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+      <div class="flex items-center gap-4">
+        <img alt="CCBES Logo" class="w-14 h-14 object-contain" src="logo.png" />
+        <div class="text-left">
+          <div class="flex flex-col">
+            <h4 class="font-display font-bold uppercase tracking-tighter text-lg leading-tight">Centro Cristiano</h4>
+            <h4 class="font-display font-bold uppercase tracking-tighter text-lg leading-tight">Bienvenido Espiritu
+              Santo</h4>
+          </div>
+          <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-1">© 2025 CCBES. Mar del Plata, Argentina.
+          </p>
+        </div>
+      </div>
+      <div class="flex space-x-6 items-center">
+        <a class="text-gray-400 hover:text-white transition-colors text-xl" href="#"><i
+            class="fa-brands fa-facebook-f"></i></a>
+        <a class="text-gray-400 hover:text-white transition-colors text-xl" href="#"><i
+            class="fa-brands fa-instagram"></i></a>
+        <a class="text-gray-400 hover:text-white transition-colors text-xl" href="#">
+          <i class="fa-solid fa-share-nodes"></i></a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+
+</html>

@@ -1,0 +1,136 @@
+<resources>
+    <string name="app_name">Radio CCBES</string>
+    <string name="default_web_client_id">717730780166-t1d44fjj4aeg16dfi3fcqtngd168001h.apps.googleusercontent.com</string>
+
+    <!-- General -->
+    <string name="radio_ccbes">Radio CCBES</string>
+    <string name="loading">Cargando...</string>
+    <string name="cancel">Cancelar</string>
+    <string name="close">Cerrar</string>
+    <string name="back">Atrás</string>
+    <string name="save">Guardar</string>
+    <string name="update">Actualizar</string>
+    <string name="publish">Publicar</string>
+    <string name="error">Error</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_radio">Radio</string>
+    <string name="nav_profile">Perfil</string>
+    <string name="nav_post">Publicar</string>
+    <string name="nav_comments">Comentarios</string>
+    <string name="nav_edit_profile">Editar Perfil</string>
+    <string name="nav_share_profile">Compartir Perfil</string>
+    <string name="nav_scanner">Escanear QR</string>
+    <string name="nav_account_settings">Cuenta</string>
+    <string name="nav_terms">Términos y Condiciones</string>
+    <string name="nav_about_us">Sobre Nosotros</string>
+
+    <!-- Welcome Screen -->
+    <string name="welcome_to">Bienvenido a</string>
+    <string name="welcome_subtitle">Lleva la radio y la comunidad contigo en todo momento.</string>
+    <string name="accept_terms">Acepto los </string>
+    <string name="terms_and_conditions">términos y condiciones</string>
+    <string name="login_google">Iniciar Sesión con Google</string>
+    <string name="account_suspended">Tu cuenta ha sido suspendida</string>
+    <string name="terms_dialog_content">Al usar Radio CCBES, aceptas que:\n\n1. Eres responsable de lo que publicas.\n2. No publicarás contenido ofensivo o ilegal.\n3. Respetarás a los demás miembros de la comunidad.\n4. Tu cuenta puede ser suspendida si incumples estas normas.\n\nUsamos tus datos para mejorar tu experiencia y permitir la interacción social dentro de la app.</string>
+    <string name="privacy_policy_url">https://ccbes.com.ar/politicas</string>
+    <string name="terms_and_conditions_title">Términos y Condiciones</string>
+    <string name="accept_privacy">Acepto las </string>
+    <string name="privacy_policy">políticas de privacidad</string>
+    <string name="login_with_email">Iniciar con email</string>
+    <string name="enter_button">Entrar</string>
+    <string name="fill_all_fields">Por favor, completa todos los campos</string>
+    <string name="login_error_generic">Error al iniciar sesión</string>
+
+    <!-- Radio Screen -->
+    <string name="radio_tagline">La Mejor Compañia</string>
+    <string name="radio_live">Radio CCBES En Vivo</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="logo_radio_desc">Logo Radio</string>
+
+    <!-- Home Screen -->
+    <string name="notifications">Notificaciones</string>
+    <string name="tab_all">Todo</string>
+    <string name="tab_trending">Tendencias</string>
+    <string name="tab_news">Noticias</string>
+    <string name="tab_reflections">Reflexiones</string>
+    <string name="no_posts">No hay publicaciones aún</string>
+    <string name="posts_will_appear">Las publicaciones aparecerán aquí</string>
+    <string name="time_ago_prefix">Hace</string>
+    <string name="time_now">Ahora</string>
+
+    <!-- Post / Create Post -->
+    <string name="new_post">Nueva Publicación</string>
+    <string name="edit_post">Editar Publicación</string>
+    <string name="post_placeholder">¿Qué está pasando?</string>
+    <string name="add_image">Agregar Imagen</string>
+    <string name="remove_image">Quitar</string>
+    <string name="no_permission_edit">No tienes permiso para editar esta publicación</string>
+    <string name="post_not_found">No se encontró la publicación</string>
+    <string name="error_load_post">Error al cargar el post</string>
+    <string name="error_upload_image">Error al subir la imagen a ImgBB</string>
+    <string name="error_update">Error al actualizar</string>
+    <string name="error_publish">Error al publicar</string>
+
+    <!-- Profile Screen -->
+    <string name="followers">Seguidores</string>
+    <string name="following">Seguidos</string>
+    <string name="posts">Publicaciones</string>
+    <string name="your_posts">Tus Publicaciones</string>
+    <string name="follow">Seguir</string>
+    <string name="unfollow">Siguiendo</string>
+    <string name="logout">Cerrar Sesión</string>
+    <string name="logout_confirm_msg">¿Estás seguro de que deseas cerrar sesión?</string>
+    <string name="settings">Configuración</string>
+    <string name="profile_photo_desc">Foto de perfil</string>
+    <string name="no_users_to_show">No hay usuarios para mostrar</string>
+    <string name="account_banned_title">Cuenta Suspendida</string>
+    <string name="account_banned_msg">Tu cuenta ha sido deshabilitada por incumplir las normas de la comunidad.</string>
+
+    <!-- Edit Profile -->
+    <string name="edit_profile_photo">Editar foto o avatar</string>
+    <string name="label_name">Nombre</string>
+    <string name="label_username">Nombre de usuario</string>
+    <string name="label_city">Ciudad</string>
+    <string name="label_phone">Teléfono</string>
+    <string name="label_email">Email</string>
+    <string name="handle_taken">Este nombre de usuario ya está en uso</string>
+
+    <!-- Settings Groups -->
+    <string name="settings_general">General</string>
+    <string name="settings_radio_content">Radio y Contenido</string>
+    <string name="settings_account">Cuenta</string>
+    <string name="notif_news">Notificaciones de Noticias/Reflexiones</string>
+    <string name="notif_social">Notificaciones de Likes/Comentarios</string>
+    <string name="media_control">Control de reproducción (Media)</string>
+    <string name="auto_play">Reproducción automática al inicio</string>
+    <!-- Notifications Channels -->
+    <string name="channel_radio_name">Radio en Vivo</string>
+    <string name="channel_radio_desc">Controles de reproducción para la radio en vivo</string>
+    <string name="share_post">Compartir publicación</string>
+    <string name="delete_post_title">¿Eliminar publicación?</string>
+    <string name="delete_post_msg">Esta acción no se puede deshacer.</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="report">Reportar</string>
+    <string name="options">Opciones</string>
+    <string name="search_placeholder">Buscar Publicaciones / Personas</string>
+    <string name="clear">Limpiar</string>
+    <string name="users_section">Usuarios</string>
+    <string name="search_hint">Busca publicaciones</string>
+    <string name="no_results">No se encontraron resultados</string>
+    <string name="try_other_keywords">Intenta con otras palabras clave</string>
+    <string name="following_status">Siguiendo</string>
+    <string name="follow_status">Seguir</string>
+    <string name="edit_profile">Editar perfil</string>
+    <string name="share_profile_button">Compartir perfil</string>
+    <string name="message">Mensaje</string>
+    <string name="no_posts_yet">Aún no hay publicaciones</string>
+    <string name="posts_unit">publicaciones</string>
+    <string name="followers_unit">seguidores</string>
+    <string name="following_unit">seguidos</string>
+    <string name="profile_label">Perfil</string>
+    <string name="password">Contraseña</string>
+</resources>

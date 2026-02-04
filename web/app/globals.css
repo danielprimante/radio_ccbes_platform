@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-montserrat);
+  --font-body: var(--font-inter);
+
+  --color-primary: #1a1a1a;
+  --color-background-light: #f4f4f5;
+  --color-background-dark: #0f172a;
+  --color-accent: #e5e7eb;
+
+  --animate-scroll: scroll 20s linear infinite;
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+/* Custom Utilities */
+.hero-grain {
+  background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCa-bv6foFA7y7iojRzQggAtyTJ5JSApJ_MelbVwAsMIbpOfcK2nQT8vjc_-ha6j09ez7ZJWEFdaMMdhxr7HirEkjdWbAj9BRhBzLSClyNA7VCX1E2fUetuer78B9oAV8j1906UYk0snCHH4qZpN0Dw84mK3IGNgQGIpSws0RP0ipOCxKz27ZI6QmmXm82ufbgKhdXZGsNwGd1tFZKGEMvZC1BzelWHrgTDE7jBMxdD3qdxml20VXNWhMEC447lnOYzV_Z_IRGjwyk);
+  background-color: #1a1a1a;
+}
+
+.scrolling-text-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.scrolling-text {
+  display: inline-block;
+  animation: scroll 20s linear infinite;
+}
+
+/* Base styles override if needed */
+body {
+  font-family: var(--font-inter), sans-serif;
+}
