@@ -37,7 +37,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         val database = AppDatabase.getDatabase(application)
-        postRepository = PostRepository(database.postDao())
+        postRepository = PostRepository(database.postDao(), userRepository)
     }
 
     fun refresh() {
@@ -100,6 +100,11 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
                 isFollowing = followingStatus,
                 isLoading = false
             )
+
+            // Start Sync
+            postRepository.syncUserPosts(targetUid)
+                .catch { e -> e.printStackTrace() }
+                .launchIn(this)
 
             postRepository.getUserPosts(targetUid).collectLatest { posts ->
                 _uiState.value = _uiState.value.copy(

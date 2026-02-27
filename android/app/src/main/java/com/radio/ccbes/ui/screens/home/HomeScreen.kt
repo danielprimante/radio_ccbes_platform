@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.google.firebase.auth.FirebaseAuth
@@ -42,9 +44,9 @@ fun HomeScreen(
     windowSizeClass: WindowSizeClass,
     viewModel: HomeViewModel = viewModel()
 ) {
-    val posts by viewModel.posts.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val posts by viewModel.posts.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     val likeRepository = remember { LikeRepository() }
     val reportRepository = remember { ReportRepository() }
@@ -101,7 +103,14 @@ fun HomeScreen(
                 IconButton(onClick = { navController.navigate(Screen.ChatList.route) }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = "Chat",
+                        contentDescription = stringResource(R.string.nav_chat),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                IconButton(onClick = { navController.navigate(Screen.CreatePost.route) }) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.nav_post),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -111,8 +120,17 @@ fun HomeScreen(
                 scrolledContainerColor = MaterialTheme.colorScheme.surface
             ),
             scrollBehavior = scrollBehavior,
-            windowInsets = WindowInsets(0, 0, 0, 0) // Evitar que la TopAppBar aÃ±ada mÃ¡s padding
+            windowInsets = WindowInsets(0, 0, 0, 0) // Evitar que la TopAppBar añada más padding
         )
+
+        // Obtener todos los likes del usuario de una vez (optimización)
+        var userLikedPosts by remember { mutableStateOf<Set<String>>(emptySet()) }
+        
+        LaunchedEffect(currentUser) {
+            currentUser?.let { user ->
+                userLikedPosts = likeRepository.getAllUserLikes(user.uid)
+            }
+        }
 
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -126,15 +144,6 @@ fun HomeScreen(
             ) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Obtener todos los likes del usuario de una vez (optimización)
-                var userLikedPosts by remember { mutableStateOf<Set<String>>(emptySet()) }
-                
-                LaunchedEffect(currentUser) {
-                    currentUser?.let { user ->
-                        userLikedPosts = likeRepository.getAllUserLikes(user.uid)
-                    }
                 }
 
                 items(posts, key = { it.id }) { post ->
@@ -156,13 +165,24 @@ fun HomeScreen(
                         currentUserId = currentUser?.uid,
                         onLike = {
                             currentUser?.let { user ->
+                                // Actualización optimista: actualizar UI primero
+                                val wasLiked = userLikedPosts.contains(post.id)
+                                userLikedPosts = if (wasLiked) {
+                                    userLikedPosts - post.id
+                                } else {
+                                    userLikedPosts + post.id
+                                }
+                                
+                                // Luego hacer la llamada al backend en segundo plano
                                 scope.launch {
-                                    likeRepository.toggleLike(post.id, user.uid)
-                                    // Actualización optimista del Set local
-                                    userLikedPosts = if (userLikedPosts.contains(post.id)) {
-                                        userLikedPosts - post.id
-                                    } else {
-                                        userLikedPosts + post.id
+                                    val result = likeRepository.toggleLike(post.id, user.uid)
+                                    // Si falla, revertir el cambio
+                                    if (result.isFailure) {
+                                        userLikedPosts = if (wasLiked) {
+                                            userLikedPosts + post.id
+                                        } else {
+                                            userLikedPosts - post.id
+                                        }
                                     }
                                 }
                             }

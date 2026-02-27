@@ -41,6 +41,7 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.radio.ccbes.R
 import com.radio.ccbes.data.cache.AppDatabase
+import com.radio.ccbes.ui.components.NetworkImage
 
 import com.google.firebase.auth.FirebaseAuth
 import com.radio.ccbes.data.auth.AuthManager
@@ -73,7 +74,7 @@ fun ProfileScreen(
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val userRepository = remember { UserRepository() }
-    val postRepository = remember { PostRepository(postDao = AppDatabase.getDatabase(context).postDao()) }
+    val postRepository = remember { PostRepository(postDao = AppDatabase.getDatabase(context).postDao(), userRepository = userRepository) }
     val followRepository = remember { FollowRepository() }
     val likeRepository = remember { LikeRepository() }
     val reportRepository = remember { ReportRepository() }
@@ -250,8 +251,8 @@ fun ProfileScreen(
                             color = Color.LightGray.copy(alpha = 0.2f)
                         ) {
                             if (uiState.userProfile?.photoUrl != null) {
-                                AsyncImage(
-                                    model = uiState.userProfile?.photoUrl,
+                                NetworkImage(
+                                    url = uiState.userProfile?.photoUrl,
                                     contentDescription = "Foto de perfil",
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
@@ -416,14 +417,17 @@ fun ProfileScreen(
                             }
                         }
                     } else {
-                        uiState.userPosts.forEach { post ->
-                            var isLiked by remember { mutableStateOf(false) }
-                            
-                            LaunchedEffect(post.id, currentUser) {
-                                currentUser?.let { user ->
-                                    isLiked = likeRepository.hasUserLikedPost(post.id, user.uid)
-                                }
+                        // Obtener todos los likes del usuario de una vez (optimización)
+                        var userLikedPosts by remember { mutableStateOf<Set<String>>(emptySet()) }
+                        
+                        LaunchedEffect(currentUser) {
+                            currentUser?.let { user ->
+                                userLikedPosts = likeRepository.getAllUserLikes(user.uid)
                             }
+                        }
+
+                        uiState.userPosts.forEach { post ->
+                            val isLiked = userLikedPosts.contains(post.id)
                             
                             PostCard(
                                 userName = post.userName,
@@ -441,8 +445,25 @@ fun ProfileScreen(
                                 currentUserId = currentUser?.uid,
                                 onLike = {
                                     currentUser?.let { user ->
+                                        // Actualización optimista: actualizar UI primero
+                                        val wasLiked = userLikedPosts.contains(post.id)
+                                        userLikedPosts = if (wasLiked) {
+                                            userLikedPosts - post.id
+                                        } else {
+                                            userLikedPosts + post.id
+                                        }
+                                        
+                                        // Luego hacer la llamada al backend en segundo plano
                                         scope.launch {
-                                            likeRepository.toggleLike(post.id, user.uid)
+                                            val result = likeRepository.toggleLike(post.id, user.uid)
+                                            // Si falla, revertir el cambio
+                                            if (result.isFailure) {
+                                                userLikedPosts = if (wasLiked) {
+                                                    userLikedPosts + post.id
+                                                } else {
+                                                    userLikedPosts - post.id
+                                                }
+                                            }
                                         }
                                     }
                                 },
@@ -530,7 +551,7 @@ fun ProfileScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
@@ -671,8 +692,8 @@ fun UserListItem(user: User, onProfileClick: () -> Unit) {
             color = Color.LightGray.copy(alpha = 0.2f)
         ) {
             if (user.photoUrl?.isNotEmpty() == true) {
-                AsyncImage(
-                    model = user.photoUrl,
+                NetworkImage(
+                    url = user.photoUrl,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

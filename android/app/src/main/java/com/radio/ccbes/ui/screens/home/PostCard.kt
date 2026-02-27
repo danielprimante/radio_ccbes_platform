@@ -60,6 +60,7 @@ import com.radio.ccbes.R
 import com.radio.ccbes.ui.components.ReportDialog
 import com.radio.ccbes.ui.components.highlightPostContent
 import com.radio.ccbes.ui.components.LinkPreviewCard
+import com.radio.ccbes.ui.components.NetworkImage
 import com.radio.ccbes.util.LinkParser
 import com.radio.ccbes.data.model.User
 import com.radio.ccbes.data.model.Chat
@@ -162,8 +163,8 @@ fun PostCard(
             ) {
                 // User Avatar
                 if (!userPhotoUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = userPhotoUrl,
+                    NetworkImage(
+                        url = userPhotoUrl,
                         contentDescription = stringResource(R.string.profile_photo_desc),
                         modifier = Modifier
                             .size(36.dp) // Reducido de 40.dp
@@ -251,7 +252,7 @@ fun PostCard(
             if (content.isNotEmpty()) {
                 val annotatedString = content.highlightPostContent()
                 val firstUrl = remember(content) { LinkParser.extractFirstUrl(content) }
-                
+
                 ClickableText(
                     text = annotatedString,
                     style = MaterialTheme.typography.bodyLarge.copy(
@@ -271,66 +272,66 @@ fun PostCard(
                             }
                     }
                 )
-                
+
                 if (firstUrl != null) {
                     Spacer(modifier = Modifier.height(12.dp))
                     LinkPreviewCard(url = firstUrl)
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp)) // Reducido de 12.dp
             }
 
             // Carousel or Single Image
-                val allImages = if (images.isNotEmpty()) images else listOfNotNull(imageUrl)
+            val allImages = if (images.isNotEmpty()) images else listOfNotNull(imageUrl)
 
-                if (allImages.isNotEmpty()) {
-                    val pagerState = rememberPagerState(pageCount = { allImages.size })
+            if (allImages.isNotEmpty()) {
+                val pagerState = rememberPagerState(pageCount = { allImages.size })
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                    ) {
-                        HorizontalPager(
-                            state = pagerState,
-                            modifier = Modifier.fillMaxWidth()
-                        ) { index ->
-                            val url = allImages[index]
-                            AsyncImage(
-                                model = url,
-                                contentDescription = "Post image $index",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        val intent = Intent(context, com.radio.ccbes.ui.screens.post.FullScreenImageActivity::class.java).apply {
-                                            putExtra("IMAGE_URL", url)
-                                        }
-                                        context.startActivity(intent)
-                                    },
-                                contentScale = ContentScale.FillWidth // Se expande horizontalmente y ajusta altura dinámicamente
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { index ->
+                        val url = allImages[index]
+                        NetworkImage(
+                            url = url,
+                            contentDescription = "Post image $index",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val intent = Intent(context, com.radio.ccbes.ui.screens.post.FullScreenImageActivity::class.java).apply {
+                                        putExtra("IMAGE_URL", url)
+                                    }
+                                    context.startActivity(intent)
+                                },
+                            contentScale = ContentScale.FillWidth // Vuelve a adaptarse al ancho sin recortar
+                        )
+                    }
+
+                    // Page Indicator (e.g., 1/3) elegante
+                    if (allImages.size > 1) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp),
+                            color = Color.Black.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "${pagerState.currentPage + 1}/${allImages.size}",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                fontWeight = FontWeight.ExtraBold
                             )
-                        }
-
-                        // Page Indicator (e.g., 1/3) elegante
-                        if (allImages.size > 1) {
-                            Surface(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(16.dp),
-                                color = Color.Black.copy(alpha = 0.5f),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(
-                                    text = "${pagerState.currentPage + 1}/${allImages.size}",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    fontWeight = FontWeight.ExtraBold
-                                )
-                            }
                         }
                     }
                 }
+            }
 
             // Actions
             Row(
@@ -358,8 +359,8 @@ fun PostCard(
                         text = "$likes",
                         color = Color.Gray,
                         fontSize = 12.sp,
-                        modifier = Modifier.clickable { 
-                            if (likes > 0) onLikesClick() 
+                        modifier = Modifier.clickable {
+                            if (likes > 0) onLikesClick()
                         }
                     )
 
@@ -396,7 +397,7 @@ fun PostCard(
                 if (senderId.isNotEmpty()) {
                     coroutineScope.launch(Dispatchers.Main) {
                         android.widget.Toast.makeText(context, "Enviando...", android.widget.Toast.LENGTH_SHORT).show()
-                        
+
                         val shareData = com.radio.ccbes.util.ShareUtils.PostShareData(
                             userName = userName,
                             userHandle = if (userHandle.startsWith("@")) userHandle else "@$userHandle",
@@ -405,23 +406,24 @@ fun PostCard(
                             imageUrl = if (images.isNotEmpty()) images.first() else imageUrl,
                             postId = postId
                         )
-                        
+
                         val uri = com.radio.ccbes.util.ShareUtils.generateShareImage(context, shareData)
                         var sent = false
-                        
-                        if (uri != null) {
-                            val uploadResult = com.radio.ccbes.data.repository.ImageUploadRepository().uploadImage(context, uri)
-                            val imageUrl = uploadResult.getOrNull()
-                            
-                            if (imageUrl != null) {
-                                try {
-                                    ChatRepository().sendMessage(
-                                        chatId = chatId,
-                                        senderId = senderId,
-                                        content = imageUrl,
-                                        type = "image",
-                                        postId = postId
-                                    )
+
+                            if (uri != null) {
+                                val uploadResult = com.radio.ccbes.data.repository.ImageUploadRepository().uploadImage(context, uri)
+                                val imageData = uploadResult.getOrNull()
+
+                                if (imageData != null) {
+                                    try {
+                                        ChatRepository().sendMessage(
+                                            chatId = chatId,
+                                            senderId = senderId,
+                                            content = imageData.url,
+                                            type = "image",
+                                            postId = postId,
+                                            deleteUrl = imageData.deleteUrl
+                                        )
                                     sent = true
                                     android.widget.Toast.makeText(context, "Publicación enviada", android.widget.Toast.LENGTH_SHORT).show()
                                 } catch (e: Exception) {
@@ -429,7 +431,7 @@ fun PostCard(
                                 }
                             }
                         }
-                        
+
                         if (!sent) {
                             try {
                                 val messageContent = "He compartido una publicación de @$userHandle en Radio CCBES"

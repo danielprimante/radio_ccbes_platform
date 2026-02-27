@@ -22,10 +22,36 @@ export interface Post {
     userPhotoUrl?: string;
     content: string;
     imageUrl?: string;
+    imageDeleteUrl?: string;
+    images?: string[];
+    imagesDeleteUrls?: string[];
     likes: number;
     comments: number;
     timestamp: Timestamp;
     category: 'all' | 'trending' | 'news' | 'reflections';
+}
+
+// ... (omitted unrelated code)
+
+export interface RadioSettings {
+    streamUrl: string;
+    title?: string;
+    subtitle?: string;
+    qrImage?: string;
+    qrImageDeleteUrl?: string;
+}
+
+export interface AboutSettings {
+    logoUrl: string;
+    logoDeleteUrl?: string;
+    churchName: string;
+    subText: string;
+    location: string;
+    email: string;
+    phone: string;
+    facebookUrl: string;
+    instagramUrl: string;
+    youtubeUrl: string;
 }
 
 const postsCollection = collection(db, 'posts');
@@ -79,8 +105,21 @@ export async function updatePost(id: string, data: Partial<Post>): Promise<void>
     await updateDoc(docRef, data);
 }
 
+import { deleteImage } from './storage';
+
 export async function deletePost(id: string): Promise<void> {
     const docRef = doc(db, 'posts', id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+        const post = docSnap.data() as Post;
+        if (post.imageDeleteUrl) {
+            await deleteImage(post.imageDeleteUrl);
+        }
+        if (post.imagesDeleteUrls && post.imagesDeleteUrls.length > 0) {
+            await Promise.all(post.imagesDeleteUrls.map(url => deleteImage(url)));
+        }
+    }
     await deleteDoc(docRef);
 }
 
@@ -139,6 +178,7 @@ export interface User {
     name: string;
     handle: string;
     photoUrl?: string;
+    photoDeleteUrl?: string;
     bio: string;
     isBanned: boolean;
     fcmToken?: string;
@@ -233,8 +273,6 @@ export async function unbanUser(id: string): Promise<void> {
 // Admin API wrapper replacements for Static Export
 
 export async function createUserViaApi(data: any) {
-    // Static export cannot create Auth users securely.
-    // We throw a specific error to catch in UI and show instructions.
     throw new Error('STATIC_EXPORT_LIMITATION');
 }
 
@@ -246,13 +284,61 @@ export async function updateUserViaApi(data: any) {
 }
 
 export async function deleteUserViaApi(userId: string) {
-    // Soft delete / Firestore delete only
-    // We cannot delete from Auth without backend
+    // 1. Delete Posts and their images
+    const postsQuery = query(postsCollection, where('userId', '==', userId));
+    const postsSnap = await getDocs(postsQuery);
+
+    for (const postDoc of postsSnap.docs) {
+        const post = postDoc.data() as Post;
+        if (post.imageDeleteUrl) await deleteImage(post.imageDeleteUrl);
+        if (post.imagesDeleteUrls) {
+            await Promise.all(post.imagesDeleteUrls.map(url => deleteImage(url)));
+        }
+        await deleteDoc(postDoc.ref);
+    }
+
+    // 2. Delete Comments
+    const commentsQuery = query(commentsCollection, where('userId', '==', userId));
+    const commentsSnap = await getDocs(commentsQuery);
+    const commentPromises = commentsSnap.docs.map(d => deleteDoc(d.ref));
+    await Promise.all(commentPromises);
+
+    // 3. Delete Notifications (sent and received)
+    const sentNotifsQuery = query(collection(db, 'notifications'), where('fromUserId', '==', userId));
+    const sentNotifsSnap = await getDocs(sentNotifsQuery);
+    const sentNotifPromises = sentNotifsSnap.docs.map(d => deleteDoc(d.ref));
+
+    const receivedNotifsQuery = query(collection(db, 'notifications'), where('userId', '==', userId));
+    const receivedNotifsSnap = await getDocs(receivedNotifsQuery);
+    const receivedNotifPromises = receivedNotifsSnap.docs.map(d => deleteDoc(d.ref));
+
+    await Promise.all([...sentNotifPromises, ...receivedNotifPromises]);
+
+    // 4. Delete Chat Messages and Images (simplified - ideally should check perms)
+    const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', userId));
+    const chatsSnap = await getDocs(chatsQuery);
+
+    for (const chatDoc of chatsSnap.docs) {
+        const messagesQuery = query(collection(db, 'chats', chatDoc.id, 'messages'), where('senderId', '==', userId));
+        const messagesSnap = await getDocs(messagesQuery);
+
+        for (const msgDoc of messagesSnap.docs) {
+            const msgData = msgDoc.data();
+            if (msgData.deleteUrl) await deleteImage(msgData.deleteUrl);
+            await deleteDoc(msgDoc.ref);
+        }
+    }
+
+    // 5. Delete User Profile Image
+    const user = await getUser(userId);
+    if (user?.photoDeleteUrl) {
+        await deleteImage(user.photoDeleteUrl);
+    }
+
+    // 6. Delete User Document
     const docRef = doc(db, 'users', userId);
     await deleteDoc(docRef);
 
-    // Also cascade delete posts/comments if needed, or leave them orphan?
-    // For now just deleting the user profile user doc.
     return { success: true };
 }
 
@@ -335,10 +421,13 @@ export interface RadioSettings {
     streamUrl: string;
     title?: string;
     subtitle?: string;
+    qrImage?: string;
+    qrImageDeleteUrl?: string;
 }
 
 export interface AboutSettings {
     logoUrl: string;
+    logoDeleteUrl?: string;
     churchName: string;
     subText: string;
     location: string;
@@ -376,3 +465,58 @@ export async function updateAboutSettings(settings: AboutSettings): Promise<void
     const docRef = doc(db, 'settings', 'about');
     await setDoc(docRef, settings, { merge: true });
 }
+
+
+// ─── Programs (Radio Shows) ───────────────────────────────────────────────────
+
+export interface Program {
+    id?: string;
+    name: string;
+    imageUrl: string;
+    imageDeleteUrl?: string;
+    isActive: boolean;
+}
+
+const programsCollection = collection(db, 'programs');
+
+export async function getPrograms(): Promise<Program[]> {
+    const snapshot = await getDocs(programsCollection);
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Program));
+}
+
+export async function createProgram(program: Omit<Program, 'id'>): Promise<string> {
+    const docRef = await addDoc(programsCollection, program);
+    return docRef.id;
+}
+
+export async function updateProgram(id: string, data: Partial<Program>): Promise<void> {
+    const docRef = doc(db, 'programs', id);
+    await updateDoc(docRef, data);
+}
+
+export async function deleteProgram(id: string): Promise<void> {
+    // Primero limpia la imagen si existe
+    const docRef = doc(db, 'programs', id);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+        const program = snap.data() as Program;
+        if (program.imageDeleteUrl) {
+            await deleteImage(program.imageDeleteUrl);
+        }
+    }
+    await deleteDoc(docRef);
+}
+
+/**
+ * Marca un programa como "Al Aire" (isActive=true) y desactiva todos los demás.
+ * Si id=null, desactiva todos.
+ */
+export async function setActiveProgram(id: string | null): Promise<void> {
+    const snapshot = await getDocs(programsCollection);
+    const updates = snapshot.docs.map(d => {
+        const shouldBeActive = d.id === id;
+        return updateDoc(d.ref, { isActive: shouldBeActive });
+    });
+    await Promise.all(updates);
+}
+

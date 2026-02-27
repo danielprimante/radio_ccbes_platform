@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { getRadioSettings, updateRadioSettings, getAboutSettings, updateAboutSettings, RadioSettings, AboutSettings } from '@/lib/api';
+import { deleteImage } from '@/lib/storage';
 import AdminGuard from '@/components/AdminGuard';
 import Link from 'next/link';
 import ImageUploader from '@/components/ImageUploader';
@@ -115,6 +116,29 @@ export default function SettingsPage() {
 
         try {
             console.log('Guardando configuración completa en Firestore...');
+
+            // 1. Check if we need to delete old images (if changed)
+            try {
+                const [oldRadio, oldAbout] = await Promise.all([
+                    getRadioSettings(),
+                    getAboutSettings()
+                ]);
+
+                // Radio: QR Image
+                if (oldRadio?.qrImageDeleteUrl && oldRadio.qrImage !== radioConfig.qrImage) {
+                    console.log('Eliminando QR antiguo...');
+                    await deleteImage(oldRadio.qrImageDeleteUrl);
+                }
+
+                // About: Logo
+                if (oldAbout?.logoDeleteUrl && oldAbout.logoUrl !== aboutConfig.logoUrl) {
+                    console.log('Eliminando Logo antiguo...');
+                    await deleteImage(oldAbout.logoDeleteUrl);
+                }
+            } catch (err) {
+                console.warn('Error cleanup old images (non-fatal):', err);
+            }
+
             console.log('Datos a guardar (About):', aboutConfig);
 
             await Promise.all([
@@ -225,7 +249,7 @@ export default function SettingsPage() {
                                     <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider">Subir Nueva Imagen</label>
                                     <ImageUploader
                                         currentImageUrl={aboutConfig.logoUrl}
-                                        onImageUploaded={(url) => handleChange('about', { logoUrl: url })}
+                                        onImageUploaded={(url, deleteUrl) => handleChange('about', { logoUrl: url, logoDeleteUrl: deleteUrl })}
                                         aspectRatio="square"
                                         storagePath="images"
                                         label="Haz clic para actualizar logo"

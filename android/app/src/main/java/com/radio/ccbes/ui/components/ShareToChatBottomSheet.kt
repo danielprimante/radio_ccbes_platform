@@ -122,7 +122,7 @@ fun ShareToChatBottomSheet(
                             val name = chat.participantNames[otherUserId] ?: ""
                             val handle = chat.participantHandles[otherUserId] ?: ""
                             name.contains(searchQuery, ignoreCase = true) ||
-                            handle.contains(searchQuery.removePrefix("@"), ignoreCase = true)
+                                    handle.contains(searchQuery.removePrefix("@"), ignoreCase = true)
                         }
                     } else {
                         uiState.chats
@@ -161,7 +161,7 @@ fun ShareToChatBottomSheet(
                     val filteredFollowers = if (searchQuery.isNotEmpty()) {
                         followersNotInChats.filter { follower ->
                             follower.name.contains(searchQuery, ignoreCase = true) ||
-                            follower.handle.contains(searchQuery.removePrefix("@"), ignoreCase = true)
+                                    follower.handle.contains(searchQuery.removePrefix("@"), ignoreCase = true)
                         }
                     } else {
                         followersNotInChats

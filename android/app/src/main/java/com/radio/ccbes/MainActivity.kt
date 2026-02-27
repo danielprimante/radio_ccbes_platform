@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.radio.ccbes.ui.screens.main.MainScreen
 import com.radio.ccbes.ui.theme.RadioCCBESTheme
+import androidx.core.view.WindowCompat
 
 class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
@@ -30,15 +32,19 @@ class MainActivity : ComponentActivity() {
 
     private var initialPostId by mutableStateOf<String?>(null)
     private var initialChatId by mutableStateOf<String?>(null)
+    private var initialUserId by mutableStateOf<String?>(null)
 
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Habilitar el diseño de borde a borde (Edge-to-Edge) de forma moderna
+        enableEdgeToEdge()
 
-        // Handle notification data if app was opened from a notification
+        // Manejar datos de notificación si la app se abrió desde una notificación
         handleIntent(intent)
 
-        // Request notifications permission for Android 13+
+        // Solicitar permiso de notificaciones para Android 13+ (API 33+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
                 PackageManager.PERMISSION_GRANTED
@@ -54,9 +60,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // Inicializar la pantalla principal con los IDs obtenidos del intent (si existen)
                     MainScreen(
                         initialPostId = initialPostId,
                         initialChatId = initialChatId,
+                        initialUserId = initialUserId,
                         windowSizeClass = windowSizeClass
                     )
                 }
@@ -66,11 +74,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // Manejar el nuevo intent cuando la actividad ya está en ejecución
         handleIntent(intent)
     }
 
+    /**
+     * Procesa el intent recibido para extraer parámetros de notificaciones o Deep Links.
+     */
     private fun handleIntent(intent: Intent?) {
-        // Handle Notification Extras
+        // Manejar Extras de Notificación (OneSignal / FCM)
         intent?.extras?.let { bundle ->
             val postId = bundle.getString("postId")
             if (postId != null) {
@@ -80,19 +92,22 @@ class MainActivity : ComponentActivity() {
             if (chatId != null) {
                 initialChatId = chatId
             }
+            val userId = bundle.getString("userId")
+            if (userId != null) {
+                initialUserId = userId
+            }
         }
 
-        // Handle Deep Links (URL)
+        // Manejar Deep Links (URLs personalizadas)
         intent?.data?.let { uri ->
             val pathSegments = uri.pathSegments
             if (pathSegments.size >= 2) {
-                // https://www.ccbes.com.ar/post/{postId}
+                // Formato esperado: https://www.ccbes.com.ar/post/{postId}
                 if (pathSegments[0] == "post") {
                     initialPostId = pathSegments[1]
+                } else if (pathSegments[0] == "profile") {
+                    initialUserId = pathSegments[1]
                 }
-                // https://www.ccbes.com.ar/profile/{userId}
-                // Note: MainScreen might need update to handle initialUserId if we want to support this too,
-                // but setting initialPostId is the priority request.
             }
         }
     }

@@ -14,7 +14,7 @@ export default function Home() {
         whatsapp: ""
     });
 
-    const [events, setEvents] = useState<string[]>([]);
+    const [events, setEvents] = useState<(string | { url: string })[]>([]);
 
     const [offeringConfig, setOfferingConfig] = useState({
         message: "",
@@ -50,9 +50,12 @@ export default function Home() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
+        /**
+         * Obtiene el contenido de la landing page y la configuración global desde Firestore.
+         */
         const fetchContent = async () => {
             try {
-                // Fetch Landing Page Content
+                // Obtener contenido de la Landing Page
                 const landingRef = doc(db, "content", "landing");
                 const landingSnap = await getDoc(landingRef);
                 if (landingSnap.exists()) {
@@ -63,7 +66,7 @@ export default function Home() {
                     if (data.radio) setRadioData(prev => ({ ...prev, ...data.radio }));
                 }
 
-                // Fetch Global Config (Social Media)
+                // Obtener configuración global (Redes Sociales, etc.)
                 const configRef = doc(db, "settings", "about");
                 const configSnap = await getDoc(configRef);
                 if (configSnap.exists()) {
@@ -74,7 +77,7 @@ export default function Home() {
                     });
                 }
             } catch (error) {
-                console.error("Error fetching content:", error);
+                console.error("Error al obtener contenido:", error);
             } finally {
                 setLoading(false);
             }
@@ -83,6 +86,9 @@ export default function Home() {
         fetchContent();
     }, []);
 
+    /**
+     * Maneja el envío del formulario de pedido de oración.
+     */
     const handlePrayerSubmit = async (e: FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -303,16 +309,19 @@ export default function Home() {
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {events.map((url, index) => (
-                            <div key={index} className="aspect-square rounded-xl overflow-hidden shadow-md group hover:shadow-xl transition-all duration-300">
-                                <img
-                                    alt={`Evento ${index + 1}`}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    src={url}
-                                    loading="lazy"
-                                />
-                            </div>
-                        ))}
+                        {events.map((event, index) => {
+                            const url = typeof event === 'string' ? event : event.url;
+                            return (
+                                <div key={index} className="rounded-xl overflow-hidden shadow-md group hover:shadow-xl transition-all duration-300">
+                                    <img
+                                        alt={`Evento ${index + 1}`}
+                                        className="w-full h-full object-cover aspect-square group-hover:scale-105 transition-transform duration-500"
+                                        src={url}
+                                        loading="lazy"
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 </section>
 

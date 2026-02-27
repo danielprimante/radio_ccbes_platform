@@ -45,16 +45,18 @@ fun LikesBottomSheet(
         try {
             val userIds = likeRepository.getUsersWhoLiked(postId)
             android.util.Log.d("LikesBottomSheet", "UserIds obtenidos: ${userIds.size} usuarios - $userIds")
-            val loadedUsers = userIds.mapNotNull { userId ->
-                android.util.Log.d("LikesBottomSheet", "Cargando usuario: $userId")
-                val user = userRepository.getUser(userId)
-                android.util.Log.d("LikesBottomSheet", "Usuario cargado: ${user?.name}")
-                user
+            
+            if (userIds.isNotEmpty()) {
+                val loadedUsers = userRepository.getUsersByIds(userIds)
+                android.util.Log.d("LikesBottomSheet", "Total usuarios cargados: ${loadedUsers.size}")
+                loadedUsers.forEach { u -> android.util.Log.d("LikesBottomSheet", "Usuario: ${u.name} (id: ${u.id})") }
+                users = loadedUsers
+            } else {
+                android.util.Log.d("LikesBottomSheet", "No se encontraron IDs de usuarios para este post")
+                users = emptyList()
             }
-            android.util.Log.d("LikesBottomSheet", "Total usuarios cargados: ${loadedUsers.size}")
-            users = loadedUsers
         } catch (e: Exception) {
-            android.util.Log.e("LikesBottomSheet", "Error al cargar likes", e)
+            android.util.Log.e("LikesBottomSheet", "Error al cargar likes para postId: $postId", e)
             e.printStackTrace()
         } finally {
             isLoading = false

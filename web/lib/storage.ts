@@ -7,7 +7,19 @@ const IMGBB_API_KEY = "d7d8c8028977e32ee9fab67b251c6697";
  * @param path - No se usa en ImgBB (mantenido por compatibilidad de firma)
  * @returns Promise con la URL de descarga directa
  */
-export async function uploadImage(file: File, path: string = 'posts'): Promise<string> {
+export interface ImgBBData {
+    id: string;
+    url: string;
+    delete_url: string;
+}
+
+/**
+ * Sube una imagen a ImgBB
+ * @param file - El archivo de imagen a subir
+ * @param path - No se usa en ImgBB (mantenido por compatibilidad de firma)
+ * @returns Promise con los datos de la imagen (id, url, delete_url)
+ */
+export async function uploadImage(file: File, path: string = 'posts'): Promise<ImgBBData> {
     try {
         const formData = new FormData();
         formData.append('image', file);
@@ -25,10 +37,14 @@ export async function uploadImage(file: File, path: string = 'posts'): Promise<s
         }
 
         const data = await response.json();
-        const downloadURL = data.data.url;
+        const imgData = data.data;
 
-        console.log('Imagen subida con éxito a ImgBB:', downloadURL);
-        return downloadURL;
+        console.log('Imagen subida con éxito a ImgBB:', imgData.url);
+        return {
+            id: imgData.id,
+            url: imgData.url,
+            delete_url: imgData.delete_url
+        };
     } catch (error) {
         console.error('Error uploading image to ImgBB:', error);
         throw new Error('Error al subir la imagen a ImgBB');
@@ -36,12 +52,43 @@ export async function uploadImage(file: File, path: string = 'posts'): Promise<s
 }
 
 /**
- * Nota: El borrado en la API gratuita de ImgBB requiere el 'delete_url' 
- * que se devuelve en la subida. Como no lo estamos persistiendo,
- * esta función se deja como un log para evitar errores.
+ * Elimina una imagen de ImgBB usando su delete_url
+ * @param deleteUrl - La URL de borrado devuelta por ImgBB (e.g., https://ibb.co/ID/HASH)
  */
-export async function deleteImage(url: string): Promise<void> {
-    console.log('Nota: El borrado en ImgBB no está implementado para URLs estáticas.');
+export async function deleteImage(deleteUrl: string): Promise<void> {
+    try {
+        console.log('Intentando borrar imagen de ImgBB:', deleteUrl);
+
+        // Parse deleteUrl: https://ibb.co/ID/HASH
+        const regex = /https:\/\/ibb\.co\/([a-zA-Z0-9]+)\/([a-zA-Z0-9]+)/;
+        const match = deleteUrl.match(regex);
+
+        if (!match) {
+            console.error('Formato de delete_url inválido:', deleteUrl);
+            return;
+        }
+
+        const imageId = match[1];
+        const imageHash = match[2];
+
+        const formData = new FormData();
+        formData.append("action", "delete");
+        formData.append("delete", "image");
+        formData.append("from", "resource");
+        formData.append("deleting[id]", imageId);
+        formData.append("deleting[hash]", imageHash);
+
+        // Usamos fetch directo al endpoint de borrado extraoficial
+        await fetch("https://ibb.co/json", {
+            method: "POST",
+            body: formData,
+        });
+
+        console.log('Imagen eliminada de ImgBB (o solicitud enviada)');
+    } catch (error) {
+        console.error('Error deleting image from ImgBB:', error);
+        // No lanzamos error para no bloquear el flujo principal de borrado de datos
+    }
 }
 
 /**

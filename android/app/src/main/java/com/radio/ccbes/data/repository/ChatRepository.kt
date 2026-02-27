@@ -6,6 +6,7 @@ import com.google.firebase.firestore.Query
 import com.radio.ccbes.data.model.Chat
 import com.radio.ccbes.data.model.Message
 import com.radio.ccbes.data.model.User
+import com.radio.ccbes.data.repository.ImageUploadRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -56,13 +57,16 @@ class ChatRepository {
         awaitClose { subscription.remove() }
     }
 
-    suspend fun sendMessage(chatId: String, senderId: String, content: String, type: String = "text", postId: String? = null) {
+    private val imageUploadRepository = ImageUploadRepository()
+
+    suspend fun sendMessage(chatId: String, senderId: String, content: String, type: String = "text", postId: String? = null, deleteUrl: String? = null) {
         val message = Message(
             senderId = senderId,
             content = content,
             type = type,
             timestamp = Timestamp.now(),
-            postId = postId
+            postId = postId,
+            deleteUrl = deleteUrl
         )
         
         // Add message to subcollection
@@ -156,8 +160,14 @@ class ChatRepository {
     }
 
     suspend fun deleteChat(chatId: String) {
-        // Delete all messages first
         val messages = chatsCollection.document(chatId).collection("messages").get().await()
+        
+        // Delete images first
+        messages.documents.forEach { doc ->
+            val msg = doc.toObject(Message::class.java)
+            msg?.deleteUrl?.let { imageUploadRepository.deleteImage(it) }
+        }
+
         val batch = firestore.batch()
         messages.documents.forEach { batch.delete(it.reference) }
         batch.delete(chatsCollection.document(chatId))
@@ -227,6 +237,9 @@ class ChatRepository {
             val messageDoc = messageRef.get().await()
             val message = messageDoc.toObject(Message::class.java)
             
+            // Delete image if exists
+            message?.deleteUrl?.let { imageUploadRepository.deleteImage(it) }
+
             // Delete the message
             messageRef.delete().await()
             

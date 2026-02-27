@@ -2,6 +2,7 @@ package com.radio.ccbes.data.repository
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.radio.ccbes.data.model.User
+import com.radio.ccbes.data.repository.ImageUploadRepository
 import kotlinx.coroutines.tasks.await
 
 class UserRepository {
@@ -56,10 +57,23 @@ class UserRepository {
         }
     }
 
-    suspend fun updatePhotoUrl(userId: String, photoUrl: String): Result<Unit> {
+    suspend fun updatePhotoUrl(userId: String, photoUrl: String, photoDeleteUrl: String? = null): Result<Unit> {
         return try {
+            // 1. Fetch current user to check for old image
+            val currentUser = getUser(userId)
+            val oldPhotoDeleteUrl = currentUser?.photoDeleteUrl
+
+            // 2. Delete old image if it exists and is different
+            if (oldPhotoDeleteUrl != null && oldPhotoDeleteUrl != photoDeleteUrl) {
+                imageUploadRepository.deleteImage(oldPhotoDeleteUrl)
+            }
+
+            // 3. Update Firestore
+            val updates = mutableMapOf<String, Any>("photoUrl" to photoUrl)
+            if (photoDeleteUrl != null) updates["photoDeleteUrl"] = photoDeleteUrl
+            
             usersCollection.document(userId)
-                .update("photoUrl", photoUrl)
+                .update(updates)
                 .await()
             
             // Cascade update to posts, comments, chats and notifications
@@ -78,10 +92,23 @@ class UserRepository {
         city: String,
         phone: String,
         email: String,
-        bio: String
+        bio: String,
+        photoUrl: String? = null,
+        photoDeleteUrl: String? = null
     ): Result<Unit> {
         return try {
-            val updates = mapOf(
+            // 1. Handle image deletion if a new photo is provided
+            if (photoUrl != null) {
+                val currentUser = getUser(userId)
+                val oldPhotoDeleteUrl = currentUser?.photoDeleteUrl
+                
+                if (oldPhotoDeleteUrl != null && oldPhotoDeleteUrl != photoDeleteUrl) {
+                    imageUploadRepository.deleteImage(oldPhotoDeleteUrl)
+                }
+            }
+
+            // 2. Prepare updates
+            val updates = mutableMapOf<String, Any>(
                 "name" to name,
                 "handle" to handle,
                 "city" to city,
@@ -89,10 +116,13 @@ class UserRepository {
                 "email" to email,
                 "bio" to bio
             )
+            if (photoUrl != null) updates["photoUrl"] = photoUrl
+            if (photoDeleteUrl != null) updates["photoDeleteUrl"] = photoDeleteUrl
+            
             usersCollection.document(userId).update(updates).await()
             
             // Cascade update to posts, comments, chats and notifications
-            cascadeUserUpdate(userId, newName = name, newHandle = handle)
+            cascadeUserUpdate(userId, newName = name, newHandle = handle, newPhotoUrl = photoUrl)
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -224,11 +254,20 @@ class UserRepository {
         }
     }
 
+    private val imageUploadRepository = ImageUploadRepository()
+
     suspend fun deleteUserCompletely(userId: String): Result<Unit> {
         return try {
-            // 1. Delete Posts
+            // 1. Delete Posts and their images
             val posts = firestore.collection("posts").whereEqualTo("userId", userId).get().await()
             if (!posts.isEmpty) {
+                // Delete images first
+                posts.documents.forEach { doc ->
+                    val post = doc.toObject(com.radio.ccbes.data.model.Post::class.java)
+                    post?.imageDeleteUrl?.let { imageUploadRepository.deleteImage(it) }
+                    post?.imagesDeleteUrls?.forEach { imageUploadRepository.deleteImage(it) }
+                }
+                
                 val batch = firestore.batch()
                 posts.documents.forEach { batch.delete(it.reference) }
                 batch.commit().await()
@@ -242,7 +281,7 @@ class UserRepository {
                 batch.commit().await()
             }
 
-            // 3. Delete Notifications (sent by the user and received by the user)
+            // 3. Delete Notifications
             val sentNotifications = firestore.collection("notifications").whereEqualTo("fromUserId", userId).get().await()
             if (!sentNotifications.isEmpty) {
                 val batch = firestore.batch()
@@ -257,14 +296,12 @@ class UserRepository {
                 batch.commit().await()
             }
 
-            // 4. Delete Likes (this is more complex because it affects the post's count)
+            // 4. Delete Likes
             val likes = firestore.collection("likes").whereEqualTo("userId", userId).get().await()
             if (!likes.isEmpty) {
                 likes.documents.forEach { likeDoc ->
                     val postId = likeDoc.getString("postId")
                     if (postId != null) {
-                        // Atomic decrement if possible, or just ignore since the user is gone
-                        // For simplicity in a batch-like operation, we'll just delete the like
                         firestore.collection("posts").document(postId)
                             .update("likes", com.google.firebase.firestore.FieldValue.increment(-1))
                     }
@@ -272,7 +309,32 @@ class UserRepository {
                 }
             }
             
-            // 5. Delete User Profile
+            // 5. Delete Chat Messages and Images
+            val chats = firestore.collection("chats")
+                .whereArrayContains("participants", userId)
+                .get()
+                .await()
+                
+            for (chatDoc in chats) {
+                val messages = chatDoc.reference.collection("messages")
+                    .whereEqualTo("senderId", userId)
+                    .get()
+                    .await()
+                    
+                if (!messages.isEmpty) {
+                    messages.documents.forEach { msgDoc ->
+                        val msg = msgDoc.toObject(com.radio.ccbes.data.model.Message::class.java)
+                        msg?.deleteUrl?.let { imageUploadRepository.deleteImage(it) }
+                        msgDoc.reference.delete()
+                    }
+                }
+            }
+            
+            // 6. Delete User Profile Image
+            val user = getUser(userId)
+            user?.photoDeleteUrl?.let { imageUploadRepository.deleteImage(it) }
+
+            // 7. Delete User Profile
             usersCollection.document(userId).delete().await()
 
             Result.success(Unit)

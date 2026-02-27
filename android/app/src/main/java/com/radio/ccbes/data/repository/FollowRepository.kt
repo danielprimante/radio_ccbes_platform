@@ -62,7 +62,8 @@ class FollowRepository {
                 // Send OneSignal push notification
                 oneSignalService.sendFollowNotification(
                     toUserId = followingId,
-                    fromUserName = followerUser.name
+                    fromUserName = followerUser.name,
+                    fromUserId = followerId
                 )
             }
         } catch (e: Exception) {

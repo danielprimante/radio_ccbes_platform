@@ -23,13 +23,22 @@ import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AccountSettingsScreen(navController: NavController) {
+fun AccountSettingsScreen(
+    navController: NavController,
+    viewModel: AccountSettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val auth = remember { FirebaseAuth.getInstance() }
     val userRepository = remember { UserRepository() }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isOperating by remember { mutableStateOf(false) }
+    
+    val cacheSize by viewModel.cacheSize.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCacheSize(context)
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -100,7 +109,8 @@ fun AccountSettingsScreen(navController: NavController) {
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                ),
+                windowInsets = WindowInsets(0, 0, 0, 0)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -109,9 +119,73 @@ fun AccountSettingsScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Storage Management Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Text(
+                    text = "GESTIÓN DE ALMACENAMIENTO",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Memoria en caché",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                "Espacio consumido: $cacheSize",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                        
+                        Button(
+                            onClick = { viewModel.clearCache(context) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            shape = MaterialTheme.shapes.small,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text("Borrar caché", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "SESIÓN Y SEGURIDAD",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.Gray,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
             Button(
                 onClick = {
                     scope.launch {
@@ -147,8 +221,9 @@ fun AccountSettingsScreen(navController: NavController) {
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
             )
         }
     }
 }
+

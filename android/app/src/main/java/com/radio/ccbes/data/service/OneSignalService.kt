@@ -17,10 +17,11 @@ class OneSignalService {
         title: String,
         message: String,
         postId: String? = null,
-        chatId: String? = null
+        chatId: String? = null,
+        userId: String? = null
     ) = withContext(Dispatchers.IO) {
         Log.d("OneSignalService", "Intentando enviar notificación a: $toUserId")
-        Log.d("OneSignalService", "Título: $title, Mensaje: $message, PostId: $postId, ChatId: $chatId")
+        Log.d("OneSignalService", "Título: $title, Mensaje: $message, PostId: $postId, ChatId: $chatId, UserId: $userId")
         
         if (Constants.ONESIGNAL_REST_API_KEY == "YOUR_REST_API_KEY_HERE") {
             Log.e("OneSignalService", "REST API Key no configurada. No se enviará la notificación.")
@@ -35,8 +36,7 @@ class OneSignalService {
             connection.setRequestProperty("Authorization", "Key ${Constants.ONESIGNAL_REST_API_KEY}")
             connection.doOutput = true
             
-            Log.d("OneSignalService", "API Key length: ${Constants.ONESIGNAL_REST_API_KEY.length}")
-            Log.d("OneSignalService", "API Key (primeros 10 chars): ${Constants.ONESIGNAL_REST_API_KEY.take(10)}...")
+            // Logs removed for security
 
             val jsonBody = JSONObject().apply {
                 put("app_id", Constants.ONESIGNAL_APP_ID)
@@ -57,6 +57,7 @@ class OneSignalService {
                 val data = JSONObject()
                 if (postId != null) data.put("postId", postId)
                 if (chatId != null) data.put("chatId", chatId)
+                if (userId != null) data.put("userId", userId)
                 
                 if (data.length() > 0) {
                     put("data", data)
@@ -103,11 +104,12 @@ class OneSignalService {
         )
     }
     
-    suspend fun sendFollowNotification(toUserId: String, fromUserName: String) {
+    suspend fun sendFollowNotification(toUserId: String, fromUserName: String, fromUserId: String) {
         sendNotification(
             toUserId = toUserId,
             title = "Nuevo Seguidor",
-            message = "$fromUserName comenzó a seguirte."
+            message = "$fromUserName comenzó a seguirte.",
+            userId = fromUserId
         )
     }
 

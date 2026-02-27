@@ -97,10 +97,13 @@ fun NotificationsScreen(
                         onClick = {
                             viewModel.markAsRead(notification.id)
                             notification.postId?.let { pid ->
-                                navController.navigate(Screen.Comments.createRoute(pid))
+                                navController.navigate(Screen.PostDetail.createRoute(pid))
                             }
                             notification.chatId?.let { cid ->
                                 navController.navigate(Screen.Chat.createRoute(cid))
+                            }
+                            if (notification.type == NotificationType.FOLLOW.value) {
+                                navController.navigate(Screen.Profile.createRoute(notification.fromUserId))
                             }
                         }
                     )
@@ -153,6 +156,7 @@ fun NotificationItem(notification: Notification, onClick: () -> Unit) {
                             NotificationType.LIKE.value -> Color(0xFFE91E63)
                             NotificationType.COMMENT.value -> Color(0xFF2196F3)
                             NotificationType.MESSAGE.value -> Color(0xFF4CAF50)
+                            NotificationType.FOLLOW.value -> Color(0xFF9C27B0) // Purple for follow
                             else -> Color.Gray
                         }
                     ),
@@ -163,6 +167,7 @@ fun NotificationItem(notification: Notification, onClick: () -> Unit) {
                         NotificationType.LIKE.value -> Icons.Default.Favorite
                         NotificationType.COMMENT.value -> Icons.AutoMirrored.Filled.Comment
                         NotificationType.MESSAGE.value -> Icons.AutoMirrored.Filled.Chat
+                        NotificationType.FOLLOW.value -> Icons.Default.Person
                         else -> Icons.Default.Person
                     },
                     contentDescription = null,
@@ -185,6 +190,7 @@ fun NotificationItem(notification: Notification, onClick: () -> Unit) {
                         NotificationType.LIKE.value -> "le dio me gusta a tu publicación"
                         NotificationType.COMMENT.value -> "comentó tu publicación"
                         NotificationType.MESSAGE.value -> "te envió un mensaje"
+                        NotificationType.FOLLOW.value -> "comenzó a seguirte"
                         else -> "interactuó contigo"
                     }
                 )

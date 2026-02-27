@@ -30,10 +30,17 @@ class RadioService : MediaSessionService() {
     private var isNotificationEnabled = true
     private lateinit var player: ExoPlayer
 
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
+
     @OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
         settingsManager = SettingsManager(this)
+
+        // Acquire WakeLock to keep CPU running
+        val powerManager = getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+        wakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "RadioAPP::RadioServiceWakeLock")
+        wakeLock?.acquire(10 * 60 * 60 * 1000L /* 10 hours */)
 
         serviceScope.launch {
             settingsManager.mediaNotificationEnabled.collect { enabled ->
@@ -95,7 +102,8 @@ class RadioService : MediaSessionService() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val player = mediaSession?.player
-        if (player?.playWhenReady == false) {
+        // Stop only if not playing or empty
+        if (player == null || !player.isPlaying || player.mediaItemCount == 0) {
             stopSelf()
         }
     }
@@ -110,6 +118,9 @@ class RadioService : MediaSessionService() {
             player.release()
             release()
             mediaSession = null
+        }
+        if (wakeLock?.isHeld == true) {
+            wakeLock?.release()
         }
         super.onDestroy()
     }

@@ -20,32 +20,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.CameraAlt
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.radio.ccbes.data.model.Message
+import com.radio.ccbes.data.model.Post
 import com.radio.ccbes.ui.theme.RedAccent
+import com.radio.ccbes.ui.navigation.Screen
 import com.radio.ccbes.util.FileUtils
 import com.radio.ccbes.util.TimeUtils
 
@@ -62,28 +60,17 @@ fun ChatScreen(
     var messageText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showMenu by remember { mutableStateOf(false) }
-    var isTyping by remember { mutableStateOf(false) }
-    var isFocused by remember { mutableStateOf(false) }
+    var isInitialLoad by remember { mutableStateOf(true) }
 
-    // Media Launchers
-    val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
+    // Lanzadores de medios
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { viewModel.sendImage(context, it) }
     }
-
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success) {
-            tempImageUri?.let { viewModel.sendImage(context, it) }
-        }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) tempImageUri?.let { viewModel.sendImage(context, it) }
     }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             val uri = FileUtils.createImageUri(context)
             tempImageUri = uri
@@ -91,62 +78,44 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(chatId) {
-        viewModel.initChat(chatId)
-    }
+    LaunchedEffect(chatId) { viewModel.initChat(chatId) }
 
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.messages.size - 1)
-        }
-    }
-    
-    // Auto-scroll when typing
-    LaunchedEffect(messageText, isFocused) {
-        if (messageText.isNotEmpty() && isFocused && uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(
-                index = uiState.messages.size - 1,
-                scrollOffset = 0
-            )
+            if (isInitialLoad) {
+                listState.scrollToItem(0)
+                isInitialLoad = false
+            } else {
+                listState.animateScrollToItem(0)
+            }
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(start = 0.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(38.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(modifier = Modifier.size(38.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
                             if (uiState.otherUserPhoto.isNotEmpty()) {
                                 AsyncImage(
-                                    model = uiState.otherUserPhoto,
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(uiState.otherUserPhoto)
+                                        .crossfade(true)
+                                        .build(),
                                     contentDescription = null,
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Crop
                                 )
-                            } else {
-                                Icon(Icons.Default.Person, null, modifier = Modifier.padding(8.dp), tint = Color.Gray)
-                            }
+                            } else Icon(Icons.Default.Person, null, Modifier.padding(8.dp), tint = Color.Gray)
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(Modifier.width(10.dp))
                         Column {
-                            Text(
-                                text = uiState.otherUserName,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Text(uiState.otherUserName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             if (uiState.otherUserHandle.isNotEmpty()) {
                                 Text(
-                                    text = if (uiState.otherUserHandle.startsWith("@")) uiState.otherUserHandle else "@${uiState.otherUserHandle}",
+                                    if (uiState.otherUserHandle.startsWith("@")) uiState.otherUserHandle else "@${uiState.otherUserHandle}",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -155,301 +124,226 @@ fun ChatScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                    }
+                    IconButton(onClick = { navController.navigateUp() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás") }
                 },
                 actions = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Más opciones")
+                    IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, "Más") }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(text = { Text("Borrar chat") }, onClick = { showMenu = false; viewModel.deleteChat { navController.navigateUp() } })
+                        DropdownMenuItem(text = { Text("Reportar usuario") }, onClick = { showMenu = false; viewModel.reportUser("Reporte") })
+                        DropdownMenuItem(text = { Text("Bloquear usuario") }, onClick = { showMenu = false; viewModel.blockUser() })
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Borrar chat") },
-                            onClick = {
-                                showMenu = false
-                                viewModel.deleteChat { navController.navigateUp() }
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Reportar usuario") },
-                            onClick = {
-                                showMenu = false
-                                viewModel.reportUser("Reporte desde chat")
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Bloquear usuario") },
-                            onClick = {
-                                showMenu = false
-                                viewModel.blockUser()
-                            }
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                windowInsets = WindowInsets(0, 0, 0, 0)
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background, 
-        bottomBar = {
-            ChatInput(
-                messageText = messageText,
-                onMessageChange = { 
-                    messageText = it
-                    isTyping = it.isNotEmpty()
-                },
-                onSend = {
-                    viewModel.sendMessage(messageText)
-                    messageText = ""
-                    isTyping = false
-                },
-                onFocusChanged = { focused ->
-                    isFocused = focused
-                },
-                onCameraClick = {
-                    val permissionCheckResult = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
-                    if (permissionCheckResult == PackageManager.PERMISSION_GRANTED) {
-                        val uri = FileUtils.createImageUri(context)
-                        tempImageUri = uri
-                        cameraLauncher.launch(uri)
-                    } else {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                },
-                onGalleryClick = {
-                    galleryLauncher.launch("image/*")
                 }
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp)
-            ) {
-                items(
-                    items = uiState.messages,
-                    key = { it.id }
-                ) { message ->
-                    val isMine = message.senderId == currentUserId
-                    MessageBubble(
-                        modifier = Modifier.animateItem(
-                            placementSpec = spring<IntOffset>(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMediumLow
-                            )
-                        ),
-                        message = message,
-                        isMine = isMine,
-                        onEdit = { messageId, newContent ->
-                            viewModel.editMessage(messageId, newContent)
-                        },
-                        onDelete = { messageId ->
-                            viewModel.deleteMessage(messageId)
-                        },
-                        onImageClick = { _, postId ->
-                            if (postId != null) {
-                                navController.navigate(com.radio.ccbes.ui.navigation.Screen.Comments.createRoute(postId))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    reverseLayout = true,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(12.dp)
+                ) {
+                    items(
+                        items = uiState.messages.asReversed(),
+                        key = { it.id }
+                    ) { message ->
+                        val isMine = message.senderId == currentUserId
+                        MessageBubble(
+                            message = message,
+                            isMine = isMine,
+                            sharedPost = uiState.sharedPosts[message.postId],
+                            onEdit = { id, text -> viewModel.editMessage(id, text) },
+                            onDelete = { id -> viewModel.deleteMessage(id) },
+                            onImageClick = { _, postId ->
+                                postId?.let { navController.navigate(Screen.PostDetail.createRoute(it)) }
                             }
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+
+                if (uiState.isUploading) {
+                    CircularProgressIndicator(Modifier.align(Alignment.Center), color = RedAccent)
                 }
             }
-            
-            if (uiState.isUploading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = RedAccent)
-                }
-            }
+
+            ChatInput(
+                messageText = messageText,
+                onMessageChange = { messageText = it },
+                onSend = { if (messageText.isNotBlank()) { viewModel.sendMessage(messageText); messageText = "" } },
+                onCameraClick = {
+                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        val uri = FileUtils.createImageUri(context)
+                        tempImageUri = uri
+                        cameraLauncher.launch(uri)
+                    } else permissionLauncher.launch(Manifest.permission.CAMERA)
+                },
+                onGalleryClick = { galleryLauncher.launch("image/*") }
+            )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
     isMine: Boolean,
     modifier: Modifier = Modifier,
-    onEdit: (String, String) -> Unit = { _, _ -> },
-    onDelete: (String) -> Unit = {},
-    onImageClick: (String, String?) -> Unit = { _, _ -> }
+    sharedPost: Post? = null,
+    onEdit: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+    onImageClick: (String, String?) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var editText by remember { mutableStateOf(message.content) }
-    
-    // Edit Dialog
+
     if (showEditDialog) {
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
             title = { Text("Editar mensaje") },
-            text = {
-                TextField(
-                    value = editText,
-                    onValueChange = { editText = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Escribe tu mensaje") }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (editText.isNotBlank()) {
-                            onEdit(message.id, editText)
-                            showEditDialog = false
-                        }
-                    }
-                ) {
-                    Text("Guardar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
+            text = { TextField(value = editText, onValueChange = { editText = it }, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton(onClick = { if (editText.isNotBlank()) { onEdit(message.id, editText); showEditDialog = false } }) { Text("Guardar") } },
+            dismissButton = { TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") } }
         )
     }
-    
-    // Delete Dialog
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Eliminar mensaje") },
-            text = { Text("¿Estás seguro de que quieres eliminar este mensaje? Esta acción no se puede deshacer.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete(message.id)
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = RedAccent)
-                ) {
-                    Text("Eliminar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
+            title = { Text("Eliminar") },
+            text = { Text("¿Eliminar este mensaje?") },
+            confirmButton = { TextButton(onClick = { onDelete(message.id); showDeleteDialog = false }, colors = ButtonDefaults.textButtonColors(contentColor = RedAccent)) { Text("Eliminar") } },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") } }
         )
     }
-    
+
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().animateContentSize(),
         horizontalAlignment = if (isMine) Alignment.End else Alignment.Start
     ) {
         Surface(
             color = if (isMine) RedAccent else MaterialTheme.colorScheme.surfaceVariant,
             contentColor = if (isMine) Color.White else MaterialTheme.colorScheme.onSurface,
             shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
+                topStart = 16.dp, topEnd = 16.dp,
                 bottomStart = if (isMine) 16.dp else 4.dp,
                 bottomEnd = if (isMine) 4.dp else 16.dp
             ),
-            tonalElevation = 0.5.dp,
             modifier = Modifier.combinedClickable(
                 onClick = { },
-                onLongClick = {
-                    if (isMine && message.type == "text") {
-                        showMenu = true
-                    }
-                }
+                onLongClick = { if (isMine && message.type == "text") showMenu = true }
             )
         ) {
-            Box {
-                Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
-                        if (message.type == "image") {
-                            val context = LocalContext.current
+            Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                if (message.postId != null) {
+                    Column(
+                        modifier = Modifier
+                            .width(240.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .clickable { onImageClick(message.content, message.postId) }
+                    ) {
+                        if (sharedPost != null) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(8.dp)) {
+                                Surface(modifier = Modifier.size(24.dp), shape = CircleShape, color = Color.LightGray) {
+                                    AsyncImage(model = sharedPost.userPhotoUrl, contentDescription = null, contentScale = ContentScale.Crop)
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = if (sharedPost.userHandle.isNotEmpty()) "@${sharedPost.userHandle.removePrefix("@")}" else sharedPost.userName,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                             AsyncImage(
-                                model = message.content,
-                                contentDescription = "Imagen",
-                                modifier = Modifier
-                                    .widthIn(max = 260.dp)
-                                    .heightIn(max = 400.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        if (!message.postId.isNullOrBlank()) {
-                                            onImageClick(message.content, message.postId)
-                                        } else {
-                                            val intent = android.content.Intent(context, com.radio.ccbes.ui.screens.post.FullScreenImageActivity::class.java).apply {
-                                                putExtra("IMAGE_URL", message.content)
-                                            }
-                                            context.startActivity(intent)
-                                        }
-                                    },
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(sharedPost.imageUrl ?: message.content)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp, max = 400.dp),
                                 contentScale = ContentScale.FillWidth
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            if (sharedPost.content.isNotEmpty()) {
+                                Text(
+                                    text = sharedPost.content,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.DarkGray,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
                         } else {
-                        Text(
-                            text = message.content,
-                            fontSize = 15.sp
-                        )
-                        if (message.isEdited) {
-                            Text(
-                                text = "(editado)",
-                                fontSize = 10.sp,
-                                color = if (isMine) Color.White.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 2.dp)
-                            )
+                            Box(modifier = Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(modifier = Modifier.size(28.dp), color = RedAccent, strokeWidth = 3.dp)
+                            }
                         }
                     }
-                    
-                    Row(
-                        modifier = Modifier.align(Alignment.End),
-                        verticalAlignment = Alignment.CenterVertically
+                } else if (message.type == "image") {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(message.content)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Imagen",
+                        modifier = Modifier
+                            .widthIn(max = 250.dp)
+                            .heightIn(min = 100.dp, max = 450.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.FillWidth
+                    )
+                } else {
+                    // AQUÍ ESTÁ EL CAMBIO DE ALINEACIÓN:
+                    FlowRow(
+                        modifier = Modifier.widthIn(max = 260.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.Center // Centra los elementos entre sí si hay varias líneas
                     ) {
+                        // El mensaje principal
                         Text(
-                            text = TimeUtils.formatToTime(message.timestamp),
-                            fontSize = 10.sp,
-                            color = if (isMine) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            text = message.content,
+                            fontSize = 16.sp,
+                            modifier = Modifier.align(Alignment.CenterVertically) // Fuerza alineación central
                         )
-                        if (isMine) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("✓✓", fontSize = 10.sp, color = Color.White)
+
+                        // Contenedor de la hora y estado
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically, // Alinea la hora con el centro del texto
+                            modifier = Modifier.padding(top = 2.dp) // Pequeño ajuste fino
+                        ) {
+                            if (message.isEdited) {
+                                Text(
+                                    "(editado)",
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.alpha(0.6f).padding(end = 4.dp)
+                                )
+                            }
+                            Text(
+                                text = TimeUtils.formatToTime(message.timestamp),
+                                fontSize = 10.sp,
+                                modifier = Modifier.alpha(0.7f)
+                            )
                         }
                     }
                 }
-                
-                // Menu for edit/delete
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Editar") },
-                        onClick = {
-                            showMenu = false
-                            editText = message.content
-                            showEditDialog = true
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Borrar", color = RedAccent) },
-                        onClick = {
-                            showMenu = false
-                            showDeleteDialog = true
-                        }
-                    )
+
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text("Editar") }, onClick = { showMenu = false; showEditDialog = true })
+                    DropdownMenuItem(text = { Text("Borrar", color = RedAccent) }, onClick = { showMenu = false; showDeleteDialog = true })
                 }
             }
         }
@@ -461,98 +355,50 @@ fun ChatInput(
     messageText: String,
     onMessageChange: (String) -> Unit,
     onSend: () -> Unit,
-    onFocusChanged: (Boolean) -> Unit = {},
     onCameraClick: () -> Unit,
     onGalleryClick: () -> Unit
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.background,
-        modifier = Modifier.padding(bottom = 12.dp, start = 8.dp, end = 8.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(58.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier.weight(1f).heightIn(min = 48.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant
         ) {
-            Surface(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
-                ) {
-                    IconButton(onClick = onGalleryClick) { 
-                        Icon(Icons.Default.AttachFile, "Galería", tint = MaterialTheme.colorScheme.onSurfaceVariant) 
-                    }
-                    
-                    TextField(
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
+                IconButton(onClick = onGalleryClick) { Icon(Icons.Default.AttachFile, null) }
+                Box(Modifier.weight(1f).padding(vertical = 12.dp), contentAlignment = Alignment.CenterStart) {
+                    if (messageText.isEmpty()) Text("Mensaje", color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                    androidx.compose.foundation.text.BasicTextField(
                         value = messageText,
                         onValueChange = onMessageChange,
-                        placeholder = { Text("Mensaje", color = Color.Gray, fontSize = 16.sp) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .onFocusChanged { focusState ->
-                                onFocusChanged(focusState.isFocused)
-                            },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                        )
+                        modifier = Modifier.fillMaxWidth().padding(start = 4.dp),
+                        textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     )
-                    
-                    IconButton(onClick = onCameraClick) { 
-                        Icon(Icons.Default.CameraAlt, "Cámara", tint = MaterialTheme.colorScheme.onSurfaceVariant) 
-                    }
                 }
+                IconButton(onClick = onCameraClick) { Icon(Icons.Default.CameraAlt, null) }
             }
-            
-            AnimatedVisibility(
-                visible = messageText.isNotBlank(),
-                enter = fadeIn(animationSpec = tween(200)) + 
-                        scaleIn(
-                            initialScale = 0.8f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        ),
-                exit = fadeOut(animationSpec = tween(150)) + 
-                       scaleOut(
-                           targetScale = 0.8f,
-                           animationSpec = tween(150)
-                       )
+        }
+
+        AnimatedVisibility(
+            visible = messageText.isNotBlank(),
+            enter = scaleIn() + fadeIn(),
+            exit = scaleOut() + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(RedAccent)
+                    .clickable { onSend() },
+                contentAlignment = Alignment.Center
             ) {
-                Spacer(modifier = Modifier.width(8.dp))
-                val scale by animateFloatAsState(
-                    targetValue = if (messageText.isNotBlank()) 1f else 0.8f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium
-                    ),
-                    label = "sendButtonScale"
-                )
-                
-                IconButton(
-                    onClick = onSend,
-                    modifier = Modifier
-                        .size(58.dp)
-                        .clip(CircleShape)
-                        .background(RedAccent.copy(alpha = 0.1f))
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Enviar",
-                        tint = RedAccent,
-                        modifier = Modifier.scale(scale)
-                    )
-                }
+                Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White, modifier = Modifier.size(24.dp))
             }
         }
     }

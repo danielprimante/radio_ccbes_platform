@@ -298,7 +298,7 @@ fun CommentsBottomSheet(
                                                 if (selectedImageUri != null) {
                                                     val uploadResult = uploadRepository.uploadImage(context, selectedImageUri!!)
                                                     if (uploadResult.isSuccess) {
-                                                        imageUrl = uploadResult.getOrNull()
+                                                        imageUrl = uploadResult.getOrNull()?.url
                                                     } else {
                                                         snackbarHostState.showSnackbar("Error al subir imagen")
                                                         isSending = false

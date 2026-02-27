@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import ImageUploader from "@/components/ImageUploader";
+import { deleteImage } from "@/lib/storage";
 
 interface LandingData {
     hero: {
@@ -11,9 +12,10 @@ interface LandingData {
         subtitle: string;
         year: string; // Used as "Encabezado"
         backgroundImage: string;
+        backgroundImageDeleteUrl?: string;
         whatsapp: string;
     };
-    events: string[];
+    events: (string | { url: string; deleteUrl?: string })[];
     offering: {
         message: string;
         alias: string;
@@ -21,6 +23,7 @@ interface LandingData {
     };
     radio: {
         qrImage: string;
+        qrImageDeleteUrl?: string;
         playStoreLink: string;
         privacyPolicyLink: string;
     };
@@ -38,6 +41,7 @@ export default function WebConfiguration() {
     const [activeTab, setActiveTab] = useState<'config' | 'prayer'>('config');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [initialData, setInitialData] = useState<LandingData | null>(null);
 
     // Config State
     const [data, setData] = useState<LandingData>({
@@ -85,15 +89,18 @@ export default function WebConfiguration() {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const fetchedData = docSnap.data() as LandingData;
-                setData(prev => ({
-                    ...prev,
+                const normalizedData = {
+                    ...data,
                     ...fetchedData,
-                    hero: { ...prev.hero, ...(fetchedData.hero || {}) },
-                    offering: { ...prev.offering, ...(fetchedData.offering || {}) },
-                    radio: { ...prev.radio, ...(fetchedData.radio || {}) }
-                }));
+                    hero: { ...data.hero, ...fetchedData.hero },
+                    offering: { ...data.offering, ...fetchedData.offering },
+                    radio: { ...data.radio, ...fetchedData.radio }
+                };
+                setData(normalizedData);
+                setInitialData(normalizedData);
             } else {
                 await setDoc(docRef, data);
+                setInitialData(data);
             }
         } catch (error) {
             console.error("Error fetching landing data:", error);
@@ -146,17 +153,17 @@ export default function WebConfiguration() {
         }));
     };
 
-    const handleHeroImageUpload = (url: string) => {
+    const handleHeroImageUpload = (url: string, deleteUrl?: string) => {
         setData(prev => ({
             ...prev,
-            hero: { ...prev.hero, backgroundImage: url }
+            hero: { ...prev.hero, backgroundImage: url, backgroundImageDeleteUrl: deleteUrl }
         }));
     };
 
-    const handleQrImageUpload = (url: string) => {
+    const handleQrImageUpload = (url: string, deleteUrl?: string) => {
         setData(prev => ({
             ...prev,
-            radio: { ...prev.radio, qrImage: url }
+            radio: { ...prev.radio, qrImage: url, qrImageDeleteUrl: deleteUrl }
         }));
     };
 
@@ -168,12 +175,22 @@ export default function WebConfiguration() {
         }));
     };
 
-    const handleEventImageUpload = async (url: string) => {
-        const updatedEvents = [...data.events, url];
+    const handleEventImageUpload = async (url: string, deleteUrl?: string) => {
+        const newEvent = deleteUrl ? { url, deleteUrl } : url;
+        const updatedEvents = [...data.events, newEvent];
         setData(prev => ({ ...prev, events: updatedEvents }));
     };
 
-    const removeEventImage = (indexToRemove: number) => {
+    const removeEventImage = async (indexToRemove: number) => {
+        const event = data.events[indexToRemove];
+        if (typeof event !== 'string' && event.deleteUrl) {
+            try {
+                await deleteImage(event.deleteUrl);
+            } catch (e) {
+                console.error("Error deleting image from ImgBB:", e);
+            }
+        }
+
         setData(prev => ({
             ...prev,
             events: prev.events.filter((_, index) => index !== indexToRemove)
@@ -183,8 +200,21 @@ export default function WebConfiguration() {
     const saveChanges = async () => {
         setSaving(true);
         try {
+            // Delete old images if replaced
+            if (initialData) {
+                // Hero Background
+                if (initialData.hero.backgroundImageDeleteUrl && initialData.hero.backgroundImage !== data.hero.backgroundImage) {
+                    await deleteImage(initialData.hero.backgroundImageDeleteUrl);
+                }
+                // Radio QR
+                if (initialData.radio.qrImageDeleteUrl && initialData.radio.qrImage !== data.radio.qrImage) {
+                    await deleteImage(initialData.radio.qrImageDeleteUrl);
+                }
+            }
+
             const docRef = doc(db, "content", "landing");
             await setDoc(docRef, data);
+            setInitialData(data); // Update initial data
             alert("Cambios guardados correctamente");
         } catch (error) {
             console.error("Error saving changes:", error);
@@ -401,18 +431,21 @@ export default function WebConfiguration() {
                     <section className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-6">
                         <h2 className="text-xl font-semibold border-b pb-4">Imágenes de Eventos</h2>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {data.events.map((url, index) => (
-                                <div key={index} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200">
-                                    <img src={url} alt={`Evento ${index + 1}`} className="w-full h-full object-cover" />
-                                    <button
-                                        onClick={() => removeEventImage(index)}
-                                        className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-sm"
-                                        title="Eliminar imagen"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">close</span>
-                                    </button>
-                                </div>
-                            ))}
+                            {data.events.map((event, index) => {
+                                const url = typeof event === 'string' ? event : event.url;
+                                return (
+                                    <div key={index} className="relative group aspect-square rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                        <img src={url} alt={`Evento ${index + 1}`} className="w-full h-full object-contain p-2" />
+                                        <button
+                                            onClick={() => removeEventImage(index)}
+                                            className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow-sm z-10"
+                                            title="Eliminar imagen"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">close</span>
+                                        </button>
+                                    </div>
+                                );
+                            })}
                             <div className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-4 hover:bg-gray-50 transition">
                                 <span className="material-symbols-outlined text-gray-400 text-3xl mb-2">add_photo_alternate</span>
                                 <span className="text-xs text-gray-500 text-center mb-2">Agregar Nueva</span>

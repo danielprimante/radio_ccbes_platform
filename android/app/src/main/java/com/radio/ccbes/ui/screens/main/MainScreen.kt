@@ -2,6 +2,7 @@ package com.radio.ccbes.ui.screens.main
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -24,10 +25,15 @@ import com.radio.ccbes.util.ScreenSizeUtils
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
+enum class AuthState {
+    Loading, Authenticated, Unauthenticated
+}
+
 @Composable
 fun MainScreen(
     initialPostId: String? = null,
     initialChatId: String? = null,
+    initialUserId: String? = null,
     windowSizeClass: WindowSizeClass
 ) {
     val navController = rememberNavController()
@@ -40,39 +46,37 @@ fun MainScreen(
     var isLoading by remember { mutableStateOf(true) }
     var startDestination by remember { mutableStateOf<String?>(null) }
 
+    // Estado de autenticación derivado para evitar flash de pantalla de login
+    var authState by remember { mutableStateOf<AuthState>(AuthState.Loading) }
+
     // Detectar si es tablet
     val isTablet = ScreenSizeUtils.isTablet(windowSizeClass)
 
     // Determinar el destino inicial
     LaunchedEffect(Unit) {
-        // Esperar un momento para que Firebase Auth se estabilice
-        delay(500)
         val user = auth.currentUser
-
         if (user == null) {
+            authState = AuthState.Unauthenticated
             startDestination = Screen.Welcome.route
         } else {
+             // Ya tenemos usuario, validamos perfil en segundo plano pero permitimos entrada
+            authState = AuthState.Authenticated
+            startDestination = Screen.Home.route
+            
+            // Validar perfil asíncronamente
             try {
                 val profile = userRepository.getUser(user.uid)
                 if (profile != null) {
-                    // Si el perfil existe, verificamos términos, privacidad y baneo
                     if (!profile.termsAccepted || !profile.privacyAccepted || profile.isBanned) {
-                        startDestination = Screen.Welcome.route
-                    } else {
-                        startDestination = Screen.Home.route
+                         startDestination = Screen.Welcome.route
+                         authState = AuthState.Unauthenticated
                     }
-                } else {
-                    // Si el perfil es null, podría ser un error de red. 
-                    // En lugar de cerrar sesión, permitimos entrar a Home si ya teníamos un usuario.
-                    // El resto de la app manejará si faltan datos del perfil.
-                    startDestination = Screen.Home.route
                 }
             } catch (e: Exception) {
-                // Ante cualquier error de red, preferimos dejarlo entrar si ya está autenticado en Firebase
-                startDestination = Screen.Home.route
+                // Error silencioso, mantenemos acceso si ya estaba logueado
             }
         }
-
+        
         // Autoplay radio if enabled
         if (startDestination == Screen.Home.route) {
             val autoPlay = settingsManager.autoPlayRadio.first()
@@ -81,7 +85,7 @@ fun MainScreen(
                 context.startService(intent)
             }
         }
-
+        
         isLoading = false
     }
 
@@ -89,9 +93,11 @@ fun MainScreen(
     LaunchedEffect(initialPostId, initialChatId, isLoading) {
         if (!isLoading && startDestination == Screen.Home.route) {
             if (initialPostId != null) {
-                navController.navigate(Screen.Comments.createRoute(initialPostId))
+                navController.navigate(Screen.PostDetail.createRoute(initialPostId))
             } else if (initialChatId != null) {
                 navController.navigate(Screen.Chat.createRoute(initialChatId))
+            } else if (initialUserId != null) {
+                navController.navigate(Screen.Profile.createRoute(initialUserId))
             }
         }
     }
@@ -130,6 +136,7 @@ fun MainScreen(
         val mainScreens = listOf(
             Screen.Home.route,
             Screen.Search.route,
+            Screen.News.route,
             Screen.CreatePost.route,
             Screen.Radio.route,
             Screen.Profile.route,
@@ -160,7 +167,8 @@ fun MainScreen(
                         startDestination = startDestination!!,
                         modifier = Modifier
                             .weight(1f)
-                            .padding(innerPadding),
+                            .padding(innerPadding)
+                            .consumeWindowInsets(innerPadding),
                         windowSizeClass = windowSizeClass
                     )
                 }
@@ -169,7 +177,9 @@ fun MainScreen(
                 AppNavigation(
                     navController = navController,
                     startDestination = startDestination!!,
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .consumeWindowInsets(innerPadding),
                     windowSizeClass = windowSizeClass
                 )
             }

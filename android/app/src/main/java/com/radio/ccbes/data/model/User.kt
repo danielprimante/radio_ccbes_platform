@@ -11,6 +11,7 @@ data class User(
     val name: String = "",
     val handle: String = "",
     val photoUrl: String? = null,
+    val photoDeleteUrl: String? = null,
     val bio: String =  "",
     @get:PropertyName("isBanned") val isBanned: Boolean = false,
     val fcmToken: String? = null,

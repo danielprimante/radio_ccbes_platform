@@ -12,6 +12,7 @@ data class Message(
     val content: String = "",
     val timestamp: Timestamp = Timestamp.now(),
     val type: String = "text", // text, image, etc.
+    val deleteUrl: String? = null,
     val readBy: List<String> = emptyList(),
     val isEdited: Boolean = false,
     val postId: String? = null

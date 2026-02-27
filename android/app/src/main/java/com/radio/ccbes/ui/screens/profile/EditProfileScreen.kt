@@ -67,10 +67,10 @@ fun EditProfileScreen(navController: NavController) {
             scope.launch {
                 isUploading = true
                 val result = uploadRepository.uploadImage(context, it)
-                result.onSuccess { newUrl ->
-                    photoUrl = newUrl
+                result.onSuccess { data ->
+                    photoUrl = data.url
                     auth.currentUser?.let { user ->
-                        userRepository.updatePhotoUrl(user.uid, newUrl)
+                        userRepository.updatePhotoUrl(user.uid, data.url, data.deleteUrl)
                     }
                 }.onFailure {
                     // Handle error (show snackbar/toast)

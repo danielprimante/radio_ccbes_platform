@@ -59,17 +59,17 @@ class CommentRepository {
     }
 
     private suspend fun triggerCommentNotification(comment: Comment) {
-        Log.d("CommentRepository", "triggerCommentNotification iniciado - postId: ${comment.postId}, userId: ${comment.userId}")
+
         try {
             val postDoc = postsCollection.document(comment.postId).get().await()
             val post = postDoc.toObject(Post::class.java)
-            Log.d("CommentRepository", "Post obtenido: ${post?.id}, userId: ${post?.userId}")
+
             
             val fromUser = userRepository.getUser(comment.userId)
-            Log.d("CommentRepository", "Usuario obtenido: ${fromUser?.name}")
+
             
             if (post != null && fromUser != null && post.userId != comment.userId) {
-                Log.d("CommentRepository", "Condiciones cumplidas, creando notificación...")
+
                 
                 val notification = Notification(
                     type = NotificationType.COMMENT.value,
@@ -82,18 +82,18 @@ class CommentRepository {
                     timestamp = Timestamp.now()
                 )
                 notificationRepository.createNotification(notification)
-                Log.d("CommentRepository", "Notificación guardada en Firestore")
+
                 
                 // OneSignal Push Notification
-                Log.d("CommentRepository", "Llamando a OneSignalService...")
+
                 oneSignalService.sendCommentNotification(
                     toUserId = post.userId,
                     fromUserName = fromUser.name,
                     postId = comment.postId
                 )
-                Log.d("CommentRepository", "OneSignalService.sendCommentNotification completado")
+
             } else {
-                Log.w("CommentRepository", "Condiciones NO cumplidas - post: ${post != null}, fromUser: ${fromUser != null}, diferenteUsuario: ${post?.userId != comment.userId}")
+
             }
         } catch (e: Exception) {
             Log.e("CommentRepository", "Error en triggerCommentNotification", e)

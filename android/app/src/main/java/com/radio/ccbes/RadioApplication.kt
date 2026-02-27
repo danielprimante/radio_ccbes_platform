@@ -6,17 +6,40 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import com.google.firebase.auth.FirebaseAuth
 import com.onesignal.OneSignal
 import com.onesignal.debug.LogLevel
-import com.google.firebase.auth.FirebaseAuth
 import com.onesignal.notifications.INotificationClickEvent
 import com.onesignal.notifications.INotificationClickListener
 import com.radio.ccbes.util.Constants.ONESIGNAL_APP_ID
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class RadioApplication : Application() {
+class RadioApplication : Application(), ImageLoaderFactory {
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25) // Usa el 25% de la memoria disponible para la caché
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(File(cacheDir, "image_cache"))
+                    .maxSizeBytes(512 * 1024 * 1024) // 512 MB de caché en disco
+                    .build()
+            }
+            .respectCacheHeaders(false) // Forzar el uso de caché incluso si el servidor dice lo contrario
+            .crossfade(true) // Transición suave entre el placeholder y la imagen final
+            .build()
+    }
+
     override fun onCreate() {
         super.onCreate()
 
@@ -53,14 +76,17 @@ class RadioApplication : Application() {
         // Vincular usuario si ya está logueado
         FirebaseAuth.getInstance().currentUser?.let { user ->
             OneSignal.login(user.uid)
-            android.util.Log.d("RadioApplication", "Usuario vinculado a OneSignal: ${user.uid}")
         }
     }
 
+    /**
+     * Crea un canal de notificaciones para Android O y versiones posteriores.
+     * Esto es necesario para que las notificaciones de Firebase y OneSignal se agrupen correctamente.
+     */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "fcm_default_channel"
-            val channelName = "Notificaciones Radio CCBES"
+            val channelName = getString(R.string.notif_channel_name)
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(channelId, channelName, importance)
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

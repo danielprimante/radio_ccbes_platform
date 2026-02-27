@@ -3,7 +3,11 @@ package com.radio.ccbes.data.repository
 import androidx.annotation.Keep
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.radio.ccbes.data.model.Program
 import com.radio.ccbes.util.Constants
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class ConfigRepository {
@@ -54,6 +58,46 @@ class ConfigRepository {
             e.printStackTrace()
             AboutConfig()
         }
+    }
+
+    /**
+     * Retorna el programa activo actualmente (isActive = true).
+     * Si no hay ningún programa activo, retorna null (se usará el logo/nombre por defecto).
+     */
+    suspend fun getActiveProgram(): Program? {
+        return try {
+            val snapshot = db.collection("programs")
+                .whereEqualTo("isActive", true)
+                .limit(1)
+                .get()
+                .await()
+            snapshot.documents.firstOrNull()?.toObject(Program::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Observa en tiempo real el programa activo (isActive = true).
+     * Emite un nuevo valor cada vez que Firestore detecta un cambio,
+     * sin necesidad de recargar la UI.
+     */
+    fun observeActiveProgram(): Flow<Program?> = callbackFlow {
+        val listenerRegistration = db.collection("programs")
+            .whereEqualTo("isActive", true)
+            .limit(1)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    trySend(null)
+                    return@addSnapshotListener
+                }
+                val program = snapshot?.documents
+                    ?.firstOrNull()
+                    ?.toObject(Program::class.java)
+                trySend(program)
+            }
+        awaitClose { listenerRegistration.remove() }
     }
 }
 

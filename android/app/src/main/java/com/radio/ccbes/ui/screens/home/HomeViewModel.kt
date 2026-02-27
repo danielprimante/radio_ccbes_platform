@@ -43,7 +43,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         val database = AppDatabase.getDatabase(application)
-        postRepository = PostRepository(database.postDao())
+        postRepository = PostRepository(database.postDao(), userRepository)
         loadFeed()
     }
 
@@ -88,6 +88,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
             // 4. Set IDs to trigger flatMapLatest
             _feedIds.value = feedIds.toList()
+            
+            // 5. Start Sync ensuring scope cancellation closes listeners
+            postRepository.syncFeedPosts(feedIds.toList())
+                .catch { e -> 
+                    // Handle sync errors silently or show snackbar
+                    e.printStackTrace()
+                }
+                .launchIn(viewModelScope)
         }
     }
 

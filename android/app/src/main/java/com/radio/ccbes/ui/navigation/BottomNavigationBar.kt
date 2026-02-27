@@ -20,7 +20,7 @@ fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         Screen.Home,
         Screen.Search,
-        Screen.CreatePost,
+        Screen.News,
         Screen.Radio,
         Screen.Profile
     )

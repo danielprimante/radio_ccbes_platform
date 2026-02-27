@@ -15,8 +15,8 @@ android {
         applicationId = "com.radio.ccbes"
         minSdk = 24
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.18"
+        versionCode = 18
+        versionName = "1.27"
     }
 
     buildTypes {
@@ -71,6 +71,7 @@ dependencies {
 
     // Lifecycle & Navigation
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
     // Coil for Image Loading
     implementation("io.coil-kt:coil-compose:2.7.0")

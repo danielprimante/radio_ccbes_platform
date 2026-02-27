@@ -1,6 +1,8 @@
 package com.radio.ccbes.ui.screens.comments
 
 import android.net.Uri
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -67,6 +69,7 @@ import com.radio.ccbes.data.repository.ImageUploadRepository
 import com.radio.ccbes.data.repository.LikeRepository
 import com.radio.ccbes.data.repository.PostRepository
 import com.radio.ccbes.data.repository.ReportRepository
+import com.radio.ccbes.data.repository.UserRepository
 import com.radio.ccbes.ui.navigation.Screen
 import com.radio.ccbes.ui.screens.home.PostCard
 import com.radio.ccbes.ui.theme.RedAccent
@@ -91,7 +94,8 @@ fun CommentScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    val postRepository = remember { PostRepository(AppDatabase.getDatabase(context).postDao()) }
+    val userRepository = remember { UserRepository() }
+    val postRepository = remember { PostRepository(AppDatabase.getDatabase(context).postDao(), userRepository) }
     val likeRepository = remember { LikeRepository() }
     val reportRepository = remember { ReportRepository() }
 
@@ -110,6 +114,8 @@ fun CommentScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var isSending by remember { mutableStateOf(false) }
     var editingCommentId by remember { mutableStateOf<String?>(null) }
+    var showLikesModal by remember { mutableStateOf(false) }
+    var selectedPostId by remember { mutableStateOf("") }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -238,7 +244,8 @@ fun CommentScreen(
                                         navController.navigate(Screen.Profile.createRoute(userId))
                                     },
                                     onLikesClick = {
-                                        // Show likes modal if needed
+                                        selectedPostId = currentPost.id
+                                        showLikesModal = true
                                     }
                                 )
                                 HorizontalDivider(
@@ -256,16 +263,39 @@ fun CommentScreen(
                         }
 
                         items(comments, key = { it.id }) { comment ->
-                            val isLiked by repository.isCommentLikedByUser(comment.id, currentUser?.uid ?: "").collectAsState(initial = false)
+                            // Estado optimista local para likes
+                            val firestoreLiked by repository.isCommentLikedByUser(comment.id, currentUser?.uid ?: "").collectAsState(initial = null)
+                            var localLikedState by remember(comment.id) { mutableStateOf<Boolean?>(null) }
+                            
+                            // Sincronizar estado local con Firestore
+                            LaunchedEffect(firestoreLiked) {
+                                if (firestoreLiked != null && localLikedState == null) {
+                                    localLikedState = firestoreLiked
+                                } else if (firestoreLiked != null && localLikedState != null) {
+                                    // Solo actualizar si no hay acción optimista pendiente
+                                    localLikedState = firestoreLiked
+                                }
+                            }
+                            
+                            val effectiveLiked = localLikedState ?: firestoreLiked ?: false
 
                             CommentItem(
                                 comment = comment,
                                 currentUserId = currentUser?.uid,
-                                isLiked = isLiked,
+                                isLiked = effectiveLiked,
                                 onLikeClick = {
                                     if (currentUser != null) {
+                                        // Actualización optimista inmediata
+                                        val newLikedState = !effectiveLiked
+                                        localLikedState = newLikedState
+                                        
                                         scope.launch {
-                                            repository.toggleCommentLike(comment.id, currentUser.uid, postId)
+                                            val result = repository.toggleCommentLike(comment.id, currentUser.uid, postId)
+                                            if (result.isFailure) {
+                                                // Revertir si falla
+                                                localLikedState = !newLikedState
+                                                snackbarHostState.showSnackbar("Error al dar like")
+                                            }
                                         }
                                     }
                                 },
@@ -377,7 +407,7 @@ fun CommentScreen(
                                             if (selectedImageUri != null) {
                                                 val uploadResult = uploadRepository.uploadImage(context, selectedImageUri!!)
                                                 if (uploadResult.isSuccess) {
-                                                    imageUrl = uploadResult.getOrNull()
+                                                    imageUrl = uploadResult.getOrNull()?.url
                                                 } else {
                                                     snackbarHostState.showSnackbar("Error al subir imagen")
                                                     isSending = false
@@ -426,5 +456,15 @@ fun CommentScreen(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+
+        if (showLikesModal) {
+            com.radio.ccbes.ui.components.LikesBottomSheet(
+                postId = selectedPostId,
+                onDismiss = { showLikesModal = false },
+                onUserClick = { userId ->
+                    navController.navigate(Screen.Profile.createRoute(userId))
+                }
+            )
+        }
     }
 }

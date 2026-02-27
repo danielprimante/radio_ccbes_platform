@@ -4,7 +4,7 @@ import { useState, useRef, useId, useEffect } from 'react';
 import { uploadImage, compressImage } from '@/lib/storage';
 
 interface ImageUploaderProps {
-    onImageUploaded: (url: string) => void;
+    onImageUploaded: (url: string, deleteUrl?: string) => void;
     currentImageUrl?: string;
     className?: string;
     aspectRatio?: 'square' | 'video' | 'any';
@@ -63,11 +63,15 @@ export default function ImageUploader({
             const compressedFile = await compressImage(file);
             console.log('Imagen comprimida:', compressedFile.size);
 
-            console.log('Subiendo a Firebase Storage en path:', storagePath);
-            const downloadURL = await uploadImage(compressedFile, storagePath);
-            console.log('Subida completada. URL:', downloadURL);
 
-            onImageUploaded(downloadURL);
+
+            // ...
+
+            console.log('Subiendo a Firebase Storage en path:', storagePath);
+            const data = await uploadImage(compressedFile, storagePath);
+            console.log('Subida completada. URL:', data.url);
+
+            onImageUploaded(data.url, data.delete_url);
 
         } catch (err: any) {
             console.error('Error en el proceso de subida:', err);

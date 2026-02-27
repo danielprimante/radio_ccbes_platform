@@ -20,15 +20,16 @@ La aplicación móvil es el corazón de la experiencia del usuario, diseñada co
   - Soporte completo para Google Sign-In.
   - Perfiles de usuario con metadata personalizada (bio, ciudad, redes sociales).
 - **💬 Red Social & Feed Dinámico**:
-  - Muro de noticias con soporte para imágenes cargadas mediante Coil.
-  - Sistema de interacciones: Likes, comentarios en tiempo real y categorización de posts.
+  - Muro de noticias con soporte para imágenes y múltiples formatos.
+  - Sistema de interacciones completo: Likes, comentarios en tiempo real.
+  - Chat privado entre usuarios integrado.
   - Actualización por gestos "Pull-to-refresh".
 - **📸 Comunidad QR Exclusiva**:
-  - Generación de códigos QR únicos para cada perfil de usuario (ZXing).
-  - Escáner integrado de alta velocidad basado en CameraX y ML Kit Barcode Scanning.
-- **🔔 Gestión de Notificaciones**:
-  - Integración nativa con OneSignal y Firebase Cloud Messaging (FCM).
-  - Soporte para navegación profunda (Deep Linking) desde la notificación directamente al contenido.
+  - Generación de códigos QR únicos para cada perfil de usuario.
+  - Escáner integrado de alta velocidad basado en CameraX y ML Kit.
+- **🔔 Gestión de Notificaciones Avanzada**:
+  - Integración nativa con OneSignal v5 y Firebase Cloud Messaging (FCM).
+  - Soporte para navegación profunda (Deep Linking) desde la notificación.
 - **🎨 UI/UX Premium**:
   - Interfaz 100% Declarativa con `Jetpack Compose`.
   - Sistema de diseño Material Design 3 con soporte para temas dinámicos.

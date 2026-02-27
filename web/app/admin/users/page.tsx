@@ -148,8 +148,8 @@ export default function UserManagement() {
             </div>
 
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden overflow-x-auto">
+                <table className="w-full min-w-[800px]">
                     <thead className="bg-gray-50/50">
                         <tr>
                             <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Usuario</th>

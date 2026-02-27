@@ -25,9 +25,28 @@ class LikeRepository {
 
     suspend fun hasUserLikedPost(postId: String, userId: String): Boolean {
         return try {
+            // 1. Intentar con el ID compuesto moderno
             val likeId = "${postId}_${userId}"
-            val snapshot = likesCollection.document(likeId).get().await()
-            snapshot.exists()
+            if (likesCollection.document(likeId).get().await().exists()) return true
+            
+            // 2. Si no, buscar por campos (maneja formato legado b/c e IDs autogenerados)
+            val snapshot = likesCollection
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("postId", postId)
+                .limit(1)
+                .get()
+                .await()
+            if (!snapshot.isEmpty) return true
+
+            // 3. Buscar por campos legados
+            val snapshotLegacy = likesCollection
+                .whereEqualTo("c", userId)
+                .whereEqualTo("b", postId)
+                .limit(1)
+                .get()
+                .await()
+            
+            !snapshotLegacy.isEmpty
         } catch (e: Exception) {
             false
         }
@@ -78,17 +97,17 @@ class LikeRepository {
     }
 
     private suspend fun triggerLikeNotification(postId: String, fromUserId: String) {
-        android.util.Log.d("LikeRepository", "triggerLikeNotification iniciado - postId: $postId, fromUserId: $fromUserId")
+
         try {
             val postDoc = postsCollection.document(postId).get().await()
             val post = postDoc.toObject(Post::class.java)
-            android.util.Log.d("LikeRepository", "Post obtenido: ${post?.id}, userId: ${post?.userId}")
+
             
             val fromUser = userRepository.getUser(fromUserId)
-            android.util.Log.d("LikeRepository", "Usuario obtenido: ${fromUser?.name}")
+
             
             if (post != null && fromUser != null && post.userId != fromUserId) {
-                android.util.Log.d("LikeRepository", "Condiciones cumplidas, creando notificación...")
+
                 
                 val notification = Notification(
                     type = NotificationType.LIKE.value,
@@ -101,18 +120,18 @@ class LikeRepository {
                     timestamp = Timestamp.now()
                 )
                 notificationRepository.createNotification(notification)
-                android.util.Log.d("LikeRepository", "Notificación guardada en Firestore")
+
                 
                 // OneSignal Push Notification
-                android.util.Log.d("LikeRepository", "Llamando a OneSignalService...")
+
                 oneSignalService.sendLikeNotification(
                     toUserId = post.userId,
                     fromUserName = fromUser.name,
                     postId = postId
                 )
-                android.util.Log.d("LikeRepository", "OneSignalService.sendLikeNotification completado")
+
             } else {
-                android.util.Log.w("LikeRepository", "Condiciones NO cumplidas - post: ${post != null}, fromUser: ${fromUser != null}, diferenteUsuario: ${post?.userId != fromUserId}")
+
             }
         } catch (e: Exception) {
             android.util.Log.e("LikeRepository", "Error en triggerLikeNotification", e)
@@ -123,17 +142,36 @@ class LikeRepository {
     suspend fun getUsersWhoLiked(postId: String): List<String> {
         return try {
             android.util.Log.d("LikeRepository", "getUsersWhoLiked para postId: $postId")
-            val snapshot = likesCollection
+            
+            // Consulta 1: Formato estándar (postId)
+            val snapshotStandard = likesCollection
                 .whereEqualTo("postId", postId)
                 .get()
                 .await()
-            android.util.Log.d("LikeRepository", "Documentos encontrados: ${snapshot.documents.size}")
-            snapshot.documents.forEach { doc ->
-                android.util.Log.d("LikeRepository", "Doc: ${doc.id}, data: ${doc.data}")
+            
+            // Consulta 2: Formato legado (b = postId)
+            val snapshotLegacy = likesCollection
+                .whereEqualTo("b", postId)
+                .get()
+                .await()
+
+            val userIds = mutableSetOf<String>()
+            
+            // Extraer de formato estándar
+            snapshotStandard.documents.forEach { doc ->
+                doc.getString("userId")?.let { userIds.add(it) }
+                // También chequear 'c' por si acaso está mezclado
+                doc.getString("c")?.let { userIds.add(it) }
             }
-            val userIds = snapshot.documents.mapNotNull { it.getString("userId") }
-            android.util.Log.d("LikeRepository", "UserIds extraídos: $userIds")
-            userIds
+            
+            // Extraer de formato legado
+            snapshotLegacy.documents.forEach { doc ->
+                doc.getString("userId")?.let { userIds.add(it) }
+                doc.getString("c")?.let { userIds.add(it) }
+            }
+
+            android.util.Log.d("LikeRepository", "Total IDs únicos encontrados: ${userIds.size}")
+            userIds.toList()
         } catch (e: Exception) {
             android.util.Log.e("LikeRepository", "Error en getUsersWhoLiked", e)
             emptyList()
@@ -142,20 +180,35 @@ class LikeRepository {
 
     /**
      * Obtiene todos los IDs de publicaciones que el usuario ha dado like
-     * Optimización: 1 consulta en lugar de N consultas individuales
-     * @param userId ID del usuario
-     * @return Set con los IDs de las publicaciones con like
+     * Optimización: Maneja formatos estándar y legados
      */
     suspend fun getAllUserLikes(userId: String): Set<String> {
         return try {
-            val snapshot = likesCollection
+            // Consulta 1: Formato estándar (userId)
+            val snapshotStandard = likesCollection
                 .whereEqualTo("userId", userId)
                 .get()
                 .await()
             
-            snapshot.documents.mapNotNull { 
-                it.getString("postId") 
-            }.toSet()
+            // Consulta 2: Formato legado (c = userId)
+            val snapshotLegacy = likesCollection
+                .whereEqualTo("c", userId)
+                .get()
+                .await()
+            
+            val postIds = mutableSetOf<String>()
+            
+            snapshotStandard.documents.forEach { doc ->
+                doc.getString("postId")?.let { postIds.add(it) }
+                doc.getString("b")?.let { postIds.add(it) }
+            }
+            
+            snapshotLegacy.documents.forEach { doc ->
+                doc.getString("postId")?.let { postIds.add(it) }
+                doc.getString("b")?.let { postIds.add(it) }
+            }
+
+            postIds
         } catch (e: Exception) {
             android.util.Log.e("LikeRepository", "Error en getAllUserLikes", e)
             emptySet()

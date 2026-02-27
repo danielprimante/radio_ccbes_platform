@@ -50,14 +50,35 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     private val _followStatus = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     val followStatus: StateFlow<Map<String, Boolean>> = _followStatus.asStateFlow()
 
+    private var syncJob: kotlinx.coroutines.Job? = null
+
     init {
         val database = AppDatabase.getDatabase(application)
-        repository = PostRepository(database.postDao())
+        repository = PostRepository(database.postDao(), userRepository)
+        // Initial sync for empty query
+        startSync()
     }
     
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+        if (query.isBlank()) {
+            startSync()
+        } else {
+            stopSync()
+        }
         performSearch(query)
+    }
+
+    private fun startSync() {
+        if (syncJob?.isActive == true) return
+        syncJob = repository.syncPostsByCategory(PostCategory.ALL)
+            .catch { e -> e.printStackTrace() }
+            .launchIn(viewModelScope)
+    }
+
+    private fun stopSync() {
+        syncJob?.cancel()
+        syncJob = null
     }
     
     fun refresh() {

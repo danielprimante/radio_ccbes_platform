@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Timestamp } from 'firebase/firestore';
 import { auth } from '@/lib/firebase';
-import { createPost } from '@/lib/api';
+import { createPost, getUser } from '@/lib/api';
 import AdminGuard from '@/components/AdminGuard';
 
 export default function NewPostPage() {
@@ -20,9 +20,20 @@ export default function NewPostPage() {
     const router = useRouter();
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
-                setUser(currentUser);
+                try {
+                    // Fetch full profile from Firestore to get latest photoUrl
+                    const userProfile = await getUser(currentUser.uid);
+                    if (userProfile) {
+                        setUser({ ...currentUser, ...userProfile });
+                    } else {
+                        setUser(currentUser);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user profile:", error);
+                    setUser(currentUser);
+                }
             }
             setLoading(false);
         });
@@ -37,8 +48,8 @@ export default function NewPostPage() {
         try {
             const postData: any = {
                 userId: user.uid,
-                userName: user.displayName || 'Admin',
-                userHandle: '@admin',
+                userName: user.name || user.displayName || 'Admin',
+                userHandle: user.handle || '@admin',
                 content: formData.content,
                 likes: 0,
                 comments: 0,
@@ -47,8 +58,9 @@ export default function NewPostPage() {
             };
 
             // Only add optional fields if they have values
-            if (user.photoURL) {
-                postData.userPhotoUrl = user.photoURL;
+            // Prioritize Firestore photoUrl over Auth photoURL
+            if (user.photoUrl || user.photoURL) {
+                postData.userPhotoUrl = user.photoUrl || user.photoURL;
             }
             if (formData.imageUrl) {
                 postData.imageUrl = formData.imageUrl;

@@ -15,6 +15,7 @@ import com.radio.ccbes.ui.screens.auth.WelcomeScreen
 import com.radio.ccbes.ui.screens.comments.CommentScreen
 import com.radio.ccbes.ui.screens.home.HomeScreen
 import com.radio.ccbes.ui.screens.notifications.NotificationsScreen
+import com.radio.ccbes.ui.screens.news.NewsScreen
 import com.radio.ccbes.ui.screens.post.CreatePostScreen
 import com.radio.ccbes.ui.screens.profile.AboutUsScreen
 import com.radio.ccbes.ui.screens.profile.AccountSettingsScreen
@@ -55,6 +56,9 @@ fun AppNavigation(
         }
         composable(Screen.Search.route) {
             SearchScreen(navController = navController, windowSizeClass = windowSizeClass)
+        }
+        composable(Screen.News.route) {
+            NewsScreen(navController = navController, windowSizeClass = windowSizeClass)
         }
         composable(Screen.Radio.route) {
             RadioScreen(windowSizeClass = windowSizeClass)
@@ -100,6 +104,13 @@ fun AppNavigation(
         ) { backStackEntry ->
             val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
             ChatScreen(navController = navController, chatId = chatId)
+        }
+        composable(
+            route = Screen.PostDetail.route,
+            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val postId = backStackEntry.arguments?.getString("postId") ?: ""
+            com.radio.ccbes.ui.screens.post.PostDetailScreen(navController = navController, postId = postId)
         }
     }
 }

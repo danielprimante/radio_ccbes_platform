@@ -41,7 +41,7 @@ class ChatListViewModel : ViewModel() {
                     _uiState.value = _uiState.value.copy(chats = chats, isLoading = false)
                 }
             }
-            
+
             // Cargar seguidores (lista estática inicial)
             launch {
                 try {

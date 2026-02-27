@@ -23,7 +23,7 @@ fun AdaptiveNavigationRail(navController: NavController) {
     val items = listOf(
         Screen.Home,
         Screen.Search,
-        Screen.CreatePost,
+        Screen.News,
         Screen.Radio,
         Screen.Profile
     )
@@ -62,8 +62,8 @@ fun AdaptiveNavigationRail(navController: NavController) {
                     }
                 },
                 colors = NavigationRailItemDefaults.colors(
-                    selectedIconColor = RedAccent,
-                    selectedTextColor = RedAccent,
+                    selectedIconColor = MaterialTheme.colorScheme.onSurface,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
                     indicatorColor = Color.White.copy(alpha = 0f),
                     unselectedIconColor = Color.Gray,
                     unselectedTextColor = Color.Gray,

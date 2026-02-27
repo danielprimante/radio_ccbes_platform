@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import com.radio.ccbes.ui.components.NetworkImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -136,6 +137,15 @@ fun SearchScreen(
                         )
                     }
                 } else {
+                        // Obtener todos los likes del usuario de una vez (optimización)
+                        var userLikedPosts by remember { mutableStateOf<Set<String>>(emptySet()) }
+                        
+                        LaunchedEffect(currentUser) {
+                            currentUser?.let { user ->
+                                userLikedPosts = likeRepository.getAllUserLikes(user.uid)
+                            }
+                        }
+
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 16.dp)
@@ -145,13 +155,7 @@ fun SearchScreen(
                             }
 
                             items(searchResults) { post ->
-                                var isLiked by remember { mutableStateOf(false) }
-                                
-                                LaunchedEffect(post.id, currentUser) {
-                                    currentUser?.let { user ->
-                                        isLiked = likeRepository.hasUserLikedPost(post.id, user.uid)
-                                    }
-                                }
+                                val isLiked = userLikedPosts.contains(post.id)
                                 
                                 PostCard(
                                     userName = post.userName,
@@ -169,8 +173,25 @@ fun SearchScreen(
                                     currentUserId = currentUser?.uid,
                                     onLike = {
                                         currentUser?.let { user ->
+                                            // Actualización optimista: actualizar UI primero
+                                            val wasLiked = userLikedPosts.contains(post.id)
+                                            userLikedPosts = if (wasLiked) {
+                                                userLikedPosts - post.id
+                                            } else {
+                                                userLikedPosts + post.id
+                                            }
+                                            
+                                            // Luego hacer la llamada al backend en segundo plano
                                             scope.launch {
-                                                likeRepository.toggleLike(post.id, user.uid)
+                                                val result = likeRepository.toggleLike(post.id, user.uid)
+                                                // Si falla, revertir el cambio
+                                                if (result.isFailure) {
+                                                    userLikedPosts = if (wasLiked) {
+                                                        userLikedPosts + post.id
+                                                    } else {
+                                                        userLikedPosts - post.id
+                                                    }
+                                                }
                                             }
                                         }
                                     },
@@ -318,12 +339,12 @@ private fun UserResultCard(
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 if (!user.photoUrl.isNullOrEmpty()) {
-                    AsyncImage(
-                        model = user.photoUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
+                NetworkImage(
+                    url = user.photoUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
                 } else {
                     Icon(
                         Icons.Default.Person,

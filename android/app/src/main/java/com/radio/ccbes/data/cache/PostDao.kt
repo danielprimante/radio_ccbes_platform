@@ -18,6 +18,9 @@ interface PostDao {
     @Query("SELECT * FROM posts WHERE userId IN (:userIds) ORDER BY timestamp DESC")
     fun getFeedPosts(userIds: List<String>): Flow<List<PostEntity>>
 
+    @Query("SELECT * FROM posts WHERE category = :category ORDER BY timestamp DESC")
+    fun getPostsByCategory(category: String): Flow<List<PostEntity>>
+
     // Search query
     @Query("SELECT * FROM posts WHERE content LIKE '%' || :query || '%' OR userName LIKE '%' || :query || '%' ORDER BY timestamp DESC")
     suspend fun searchPosts(query: String): List<PostEntity>
@@ -30,7 +33,19 @@ interface PostDao {
 
     @Query("DELETE FROM posts WHERE id = :postId")
     suspend fun deletePost(postId: String)
+
+    @Query("DELETE FROM posts WHERE userId = :userId AND id NOT IN (:postIds)")
+    suspend fun deletePostsByUserNotInList(userId: String, postIds: List<String>)
+
+    @Query("DELETE FROM posts WHERE category = :category AND id NOT IN (:postIds)")
+    suspend fun deletePostsByCategoryNotInList(category: String, postIds: List<String>)
     
     @Query("DELETE FROM posts")
     suspend fun clearAll()
+
+    @Query("DELETE FROM posts WHERE timestamp < :timestamp")
+    suspend fun deleteOldPosts(timestamp: Long)
+
+    @Query("DELETE FROM posts WHERE id NOT IN (SELECT id FROM posts ORDER BY timestamp DESC LIMIT :limit)")
+    suspend fun keepMaxPosts(limit: Int)
 }

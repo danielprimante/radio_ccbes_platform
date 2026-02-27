@@ -3,6 +3,7 @@ package com.radio.ccbes.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Newspaper
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Radio
 import androidx.compose.material.icons.filled.Search
@@ -10,6 +11,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector?, val navRoute: String = route) {
     object Home : Screen("home", "Inicio", Icons.Default.Home)
+    object News : Screen("news", "Noticias", Icons.Default.Newspaper)
     object Notifications : Screen("notifications", "Notificaciones", null)
     object Search : Screen("search", "Buscar", Icons.Default.Search)
     object Radio : Screen("radio", "Radio", Icons.Filled.Radio)
@@ -19,7 +21,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector?
     object Comments : Screen("comments/{postId}", "Comentarios", null) {
         fun createRoute(postId: String) = "comments/$postId"
     }
-    object CreatePost : Screen("create_post", "Publicar", Icons.Default.Add)
+    object CreatePost : Screen("create_post", "Publicar", null)
     object ChatList : Screen("chat_list", "Mensajes", null)
     object Chat : Screen("chat/{chatId}", "Chat", null) {
         fun createRoute(chatId: String) = "chat/$chatId"
@@ -34,4 +36,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector?
     object AccountSettings : Screen("account_settings", "Cuenta", null)
     object TermsAndConditions : Screen("terms_and_conditions", "Términos y Condiciones", null)
     object AboutUs : Screen("about_us", "Sobre Nosotros", null)
+    object PostDetail : Screen("post_detail/{postId}", "Detalle", null) {
+        fun createRoute(postId: String) = "post_detail/$postId"
+    }
 }

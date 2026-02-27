@@ -17,6 +17,7 @@
     <string name="nav_home">Inicio</string>
     <string name="nav_search">Buscar</string>
     <string name="nav_radio">Radio</string>
+    <string name="nav_news">Noticias</string>
     <string name="nav_profile">Perfil</string>
     <string name="nav_post">Publicar</string>
     <string name="nav_comments">Comentarios</string>
@@ -132,5 +133,7 @@
     <string name="followers_unit">seguidores</string>
     <string name="following_unit">seguidos</string>
     <string name="profile_label">Perfil</string>
+    <string name="nav_chat">Chat</string>
+    <string name="notif_channel_name">Notificaciones Radio CCBES</string>
     <string name="password">Contraseña</string>
 </resources>

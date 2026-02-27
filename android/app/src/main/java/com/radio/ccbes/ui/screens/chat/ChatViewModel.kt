@@ -1,15 +1,21 @@
 package com.radio.ccbes.ui.screens.chat
 
+import android.app.Application
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.radio.ccbes.data.cache.AppDatabase
 import com.radio.ccbes.data.model.Chat
 import com.radio.ccbes.data.model.Message
+import com.radio.ccbes.data.model.Post
 import com.radio.ccbes.data.repository.ChatRepository
 import com.radio.ccbes.data.repository.ImageUploadRepository
+import com.radio.ccbes.data.repository.PostRepository
+import com.radio.ccbes.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,14 +29,22 @@ data class ChatUiState(
     val otherUserPhoto: String = "",
     val otherUserHandle: String = "",
     val otherUserId: String = "",
-    val isUploading: Boolean = false
+    val isUploading: Boolean = false,
+    val sharedPosts: Map<String, Post> = emptyMap()
 )
 
-class ChatViewModel : ViewModel() {
+class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val chatRepository = ChatRepository()
     private val imageRepository = ImageUploadRepository()
+    private val postRepository: PostRepository
+    private val userRepository = UserRepository()
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+
+    init {
+        val database = AppDatabase.getDatabase(application)
+        postRepository = PostRepository(database.postDao(), userRepository)
+    }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
@@ -57,6 +71,29 @@ class ChatViewModel : ViewModel() {
 
             chatRepository.getMessages(chatId).collect { messages ->
                 _uiState.value = _uiState.value.copy(messages = messages, isLoading = false)
+
+                // Fetch details for shared posts
+                val postIds = messages.mapNotNull { it.postId }.distinct()
+                if (postIds.isNotEmpty()) {
+                    viewModelScope.launch {
+                        val currentPosts = _uiState.value.sharedPosts.toMutableMap()
+                        var hasUpdates = false
+                        
+                        postIds.forEach { pid ->
+                            if (!currentPosts.containsKey(pid)) {
+                                val post = postRepository.getPostById(pid)
+                                if (post != null) {
+                                    currentPosts[pid] = post
+                                    hasUpdates = true
+                                }
+                            }
+                        }
+                        
+                        if (hasUpdates) {
+                            _uiState.value = _uiState.value.copy(sharedPosts = currentPosts)
+                        }
+                    }
+                }
             }
         }
     }
@@ -79,8 +116,8 @@ class ChatViewModel : ViewModel() {
         
         viewModelScope.launch {
             val result = imageRepository.uploadImage(context, uri)
-            result.onSuccess { url ->
-                chatRepository.sendMessage(chatId, senderId, url, type = "image")
+            result.onSuccess { data ->
+                chatRepository.sendMessage(chatId, senderId, data.url, type = "image", deleteUrl = data.deleteUrl)
             }
             _uiState.value = _uiState.value.copy(isUploading = false)
         }
