@@ -1,13 +1,23 @@
-# Android build files
+# Android
 **/build/
-**/android/app/build/
-.gradle/
-local.properties
-*.iml
+*.hprof
+*.pyc
+*.keystore
+!debug.keystore
 
-# IDE files
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/.turbo/
+.env*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
 .idea/
 .vscode/
-
-# Logs
-*.log
+*.swp
+*.iml
