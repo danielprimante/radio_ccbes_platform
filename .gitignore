@@ -21,3 +21,9 @@ Thumbs.db
 .vscode/
 *.swp
 *.iml
+
+# Firebase & Secrets
+android/app/google-services.json
+android/app/google-services.json.bak
+android/local.properties
+.env*

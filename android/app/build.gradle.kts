@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,6 +7,13 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp") version "2.1.0-1.0.29"
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -15,8 +24,11 @@ android {
         applicationId = "com.radio.ccbes"
         minSdk = 24
         targetSdk = 35
-        versionCode = 18
-        versionName = "1.27"
+        versionCode = 19
+        versionName = "1.28"
+
+        buildConfigField("String", "ONESIGNAL_APP_ID", "\"${localProperties.getProperty("ONESIGNAL_APP_ID") ?: ""}\"")
+        buildConfigField("String", "ONESIGNAL_REST_API_KEY", "\"${localProperties.getProperty("ONESIGNAL_REST_API_KEY") ?: ""}\"")
     }
 
     buildTypes {
@@ -27,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     lintOptions {
         disable("NullSafeMutableLiveData")
